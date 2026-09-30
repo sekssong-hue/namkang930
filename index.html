@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>남강호 실시간 잔여석 관리 프로그램 (Firebase 실시간 연동)</title>
+    
+    <style>
+        /* ==========================================================================
+           [CSS] 테마 스타일 및 전역 색상 변수 설정 (:root)
+           ========================================================================== */
+        :root {
+            --primary-dark: #002d5a;        /* 일괄 변경 버튼 등 주요 어두운 파란색 */
+            --boat3-color: #28a745;         /* 남강 3호 타이틀 배경 (초록) */
+            --boat4-color: #2c7be5;         /* 남강 4호 타이틀 배경 (파란) */
+            --boat5-color: #e67e22;         /* 남강 5호 타이틀 배경 (주황) */
+            --bg-color: #121418;            /* 전체 화면 바탕색 (어두운 회색) */
+            --card-bg: #ffffff;             /* 각 선박 섹션의 배경색 (흰색) */
+            --success: #0040ff;             /* 티켓발권 가능 인원 글자색 (파란) */
+            --danger: #e60000;              /* 매진 및 경고 색상 (빨간) */
+            
+            --ended-gray: #f0f0f0;          /* 운항 종료 및 중지 행의 배경색 (연회색) */
+            --ended-text-color: #999999;    /* 운항 종료 및 중지 행의 글자색 (흐린 회색) */
+            --dark-green: #006400;          /* 티켓발권종료 박스 배경색 (진녹색) */
+            --yellow-btn: #fbc02d;          /* 설정 변경 버튼 배경색 (노란) */
+            --yellow-btn-border: #f9a825;   /* 설정 변경 버튼 테두리색 */
+            
+            --available-bg: #e3f2fd;        /* 예약 가능 행의 은은한 배경색 (연파란) */
+            --sailing-bg: #fff9c4;          /* 운항 중 행의 은은한 배경색 (연노란) */
+            --ticketing-ended-bg: #e8f5e9;  /* 발권 종료 행의 은은한 배경색 (연초록) */
+            --boarding-start-bg: #fff3e0;   /* 탑승시작 행의 은은한 배경색 (연오렌지) */
+            --boarding-close-bg: #fffde7;   /* 탑승마감 행의 은은한 배경색 (연한 노란빛) */
+            --soldout-blink-bg: #ffebee;    /* 매진 행의 원래 은은한 배경색 (연분홍) */
+            
+            --highlight: #00ffcc;           /* 최상단 바 버튼 강조색 (민트) */
+            --tts-highlight: #ff9f43;       /* 안내방송 설정 강조색 (오렌지) */
+            --rotation-highlight: #00ecff;  /* 화면전환기 설정 강조색 (하늘색) */
+            --popup-highlight: #ff4d4d;     /* 긴급 팝업 설정 강조색 (밝은 빨간색) */
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 10px; color: #333;
+            display: flex; flex-direction: row; height: 100vh; box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .main-container { display: flex; gap: 10px; flex: 1; min-height: 0; }
+        
+        .boat-section {
+            flex: 1; background: var(--card-bg); border-radius: 15px;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        #right-sidebar {
+            width: 320px; background-color: #1e222b; padding: 15px;
+            display: flex; flex-direction: column; gap: 15px; border-radius: 15px;
+            box-sizing: border-box; margin-left: 10px; border: 1px solid #343a40;
+            overflow-y: auto;
+        }
+        
+        #sidebar-title {
+            color: #fff; font-size: 20px; font-weight: 900; text-align: center;
+            padding-bottom: 12px; border-bottom: 2px dashed #444; margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        
+        .btn-group-top { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .btn-open-guest {
+            background-color: var(--highlight); color: #000; border: none; padding: 12px;
+            font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: all 0.2s;
+        }
+        .btn-open-guest:hover { filter: brightness(1.1); }
+        .btn-reset-all { background-color: #ff4d4d !important; color: white !important; }
+
+        .alarm-toggle-container {
+            display: flex; flex-direction: column; gap: 10px; background: #282e38; 
+            padding: 12px; border-radius: 8px; border: 1px solid #444; width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .alarm-radio-row { display: flex; gap: 15px; align-items: center; justify-content: center; }
+        .alarm-toggle-container label {
+            color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
+        
+        .alarm-toggle-container input[type="radio"] {
+            width: 18px; height: 18px; cursor: pointer; accent-color: var(--highlight); margin: 0;
+        }
+        .alarm-toggle-container input[type="radio"].tts-accent { accent-color: var(--tts-highlight); }
+        .alarm-toggle-container input[type="radio"].rotation-accent { accent-color: var(--rotation-highlight); }
+        .alarm-toggle-container input[type="radio"].popup-accent { accent-color: var(--popup-highlight); }
+        .alarm-toggle-container input[type="checkbox"].rotation-accent {
+            width: 18px; height: 18px; cursor: pointer; accent-color: var(--rotation-highlight); margin: 0;
+        }
+        
+        .alarm-time-setting {
+            display: flex; flex-direction: column; gap: 8px; color: #ccc; font-size: 15px; font-weight: bold;
+            border-top: 1px solid #444; padding-top: 10px; width: 100%;
+        }
+        .setting-item-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        
+        .alarm-time-setting input[type="number"] {
+            width: 60px; height: 32px; text-align: center; font-size: 16px; font-weight: bold;
+            border: 1px solid var(--highlight); background: #000; color: var(--highlight); border-radius: 4px;
+        }
+        .alarm-time-setting input[type="number"].tts-input { border-color: var(--tts-highlight); color: var(--tts-highlight); }
+        .alarm-time-setting input[type="number"].rotation-input { border-color: var(--rotation-highlight); color: var(--rotation-highlight); }
+        .alarm-time-setting input[type="number"].popup-input { border-color: var(--popup-highlight); color: var(--popup-highlight); }
+        
+        .popup-select-container { display: flex; align-items: center; gap: 4px; }
+        .popup-select {
+            width: 58px; height: 32px; font-size: 14px; font-weight: bold; text-align: center;
+            border: 1px solid var(--popup-highlight); background: #000; color: var(--popup-highlight); border-radius: 4px;
+            outline: none; padding-left: 2px;
+        }
+
+        .alarm-time-setting textarea.popup-textarea {
+            width: 100%; height: 55px; font-size: 14px; background: #000; color: #fff; 
+            border: 1px solid #555; border-radius: 4px; padding: 5px; box-sizing: border-box; resize: none;
+        }
+
+        .box-title-sm { color: #fff; font-size: 15px; font-weight: bold; text-align: center; margin-bottom: 2px; }
+
+        .boat-header { 
+            padding: 10px 15px; color: white; 
+            display: flex; align-items: center; justify-content: space-between; 
+            position: relative; min-height: 100px; flex-wrap: nowrap;
+        }
+        .boat-title-area { display: flex; align-items: center; gap: 10px; }
+        .boat-title { font-size: 52px; font-weight: 900; letter-spacing: -2px; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); white-space: nowrap; }
+
+        .page-badge {
+            display: none; position: absolute; right: 20px; bottom: 20px;
+            background: rgba(0, 0, 0, 0.85); color: #ffffff; padding: 6px 18px;
+            font-size: 22px; font-weight: bold; border-radius: 30px; border: 2px solid #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6); z-index: 9999;
+        }
+        .is-guest .page-badge { display: inline-block; }
+
+        .boat3-title { background-color: var(--boat3-color); } 
+        .boat4-title { background-color: var(--boat4-color); } 
+        .boat5-title { background-color: var(--boat5-color); } 
+
+        .boat-info-right { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+        .boat-date { font-size: 26px; font-weight: 700; color: rgba(255,255,255,1); line-height: 1.1; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .boat-clock { font-size: 32px; font-weight: 900; font-family: 'monospace'; line-height: 1.1; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+
+        .setting-area { background: #f8f9fa; padding: 10px; border-bottom: 1px solid #ddd; display: flex; flex-direction: column; gap: 6px; }
+        .setting-area .setting-row { display: flex; gap: 6px; align-items: center; }
+        .setting-row input[type="text"], .setting-row input[type="number"] { padding: 0 6px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; height: 40px; box-sizing: border-box; }
+        
+        .btn-apply-unified {
+            height: 40px; width: 90px; font-size: 15px !important; cursor: pointer; font-weight: bold; border-radius: 6px;
+            background-color: var(--yellow-btn) !important; color: #000 !important; border: 1px solid var(--yellow-btn-border) !important;
+            display: flex; align-items: center; justify-content: center; white-space: nowrap;
+        }
+        .btn-action-unified {
+            height: 40px; width: 110px; font-size: 15px !important; cursor: pointer; font-weight: bold; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; white-space: nowrap;
+        }
+        .btn-wizard { background-color: #e1f5fe !important; color: #01579b; border: 1px solid #b3e5fc !important; }
+        .btn-section-reset { background-color: #fff0f0 !important; color: #d63031; border: 1px solid #ccc; }
+        .btn-notice-delete { background-color: #ff4d4d !important; color: #fff !important; border: 1px solid #ff3333 !important; }
+
+        .cap-container { display: flex; align-items: center; gap: 3px; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 0 6px; flex: 1; height: 40px; box-sizing: border-box;}
+        .course-container { flex: 1.5 !important; }
+        .cap-label { font-size: 14px; font-weight: bold; color: #333; white-space: nowrap; }
+        .cap-edit-input { width: 100% !important; border: none !important; text-align: center; font-size: 16px; font-weight: bold; outline: none; background: transparent; }
+        .notice-edit-input { width: 100% !important; border: none !important; text-align: left; font-size: 14px; font-weight: bold; outline: none; background: transparent; resize: none; height: 36px; padding: 6px 0 0 6px; box-sizing: border-box; font-family: inherit; }
+
+        .guest-info-banner { 
+            display: none; background: #f0f7ff; padding: 8px; border-bottom: 2px solid #2c7be5;
+            justify-content: space-around; align-items: center; font-size: 20px; font-weight: 900;
+        }
+        .is-guest .guest-info-banner { display: flex; }
+        .info-item { color: #002d5a; }
+        .info-val { color: #e60000; margin-left: 5px; }
+
+        .notice-view-container {
+            display: none; background: #fffdeb; padding: 10px 15px; border-bottom: 3px dashed #f9a825;
+            min-height: 70px; box-sizing: border-box; flex-direction: column; justify-content: center;
+        }
+        .mode-v .notice-view-container { display: flex; }
+        .notice-title { font-size: 18px; font-weight: 800; color: #d63031; margin-bottom: 2px; display: flex; align-items: center; gap: 5px; }
+        .notice-content { font-size: 22px; font-weight: 900; color: #2d3436; line-height: 1.3; white-space: normal; word-break: break-all; }
+
+        .table-wrapper { flex: 1; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; table-layout: auto; } 
+        th { background: #eee; padding: 8px 2px; border-bottom: 3px solid #ddd; position: sticky; top: 0; z-index: 10; font-size: 22px; font-weight: 900; white-space: nowrap; }
+        
+        td { padding: 6px 2px; text-align: center; border-bottom: 1px solid #eee; font-weight: 900; font-size: 26px; letter-spacing: -1px; position: relative; line-height: 1.2; white-space: nowrap; }
+        td:first-child { font-size: 28px; font-weight: 900; letter-spacing: -1px; }
+
+        .total-booked-flex { display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+        .remain-count { font-size: 32px; font-weight: 900; color: #0040ff; }
+        .text-soldout-zero { color: var(--danger) !important; font-size: 34px; }
+        .slash-divider { margin: 0 4px; font-weight: 700; color: #444; font-size: 26px; }
+
+        .row-available-bg td { background-color: var(--available-bg); }
+        .row-sailing-bg td { background-color: var(--sailing-bg); }
+        .row-ticketing-ended-bg td { background-color: var(--ticketing-ended-bg); }
+        .row-boarding-start-bg td { background-color: var(--boarding-start-bg); }
+        .row-boarding-close-solid td { background-color: var(--boarding-close-bg) !important; }
+
+        tr.row-soldout-blink td { background-color: var(--soldout-blink-bg) !important; }
+        tr.row-soldout-blink td,
+        tr.row-soldout-blink td span,
+        tr.row-soldout-blink td div,
+        tr.row-soldout-blink td .remain-count,
+        tr.row-soldout-blink td .slash-divider { color: var(--danger) !important; }
+
+        .is-guest .row-soldout-blink td { animation: textBlinker 1.5s linear infinite; }
+
+        .row-halted-gray-bg td { background-color: var(--ended-gray) !important; color: var(--ended-text-color) !important; }
+        .row-halted-gray-bg .remain-count,
+        .row-halted-gray-bg .slash-divider { color: var(--ended-text-color) !important; }
+
+        .is-guest .row-halted-gray-bg td.line-through-cell {
+            text-decoration: line-through; text-decoration-color: #000000 !important; text-decoration-thickness: 4px; 
+        }
+        .row-ended td { background-color: var(--ended-gray) !important; color: var(--ended-text-color) !important; }
+        .row-ended .remain-count { color: var(--ended-text-color) !important; }
+
+        .status-cell-flex { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn-group { display: flex; gap: 2px; }
+        .btn-adj { 
+            width: 32px; height: 32px; border: 1px solid #bbb; background: #ffffff; 
+            font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 6px; 
+            display: flex; align-items: center; justify-content: center; color: #333 !important;
+        }
+
+        .status-text { 
+            font-size: 24px; font-weight: 900; position: relative; z-index: 10; 
+            display: inline-block; line-height: 1.1; white-space: nowrap; 
+            padding: 4px 10px; border-radius: 8px; min-width: 100px; text-align: center;
+            text-decoration: none !important; 
+        }
+        
+        .text-ended-box { background-color: #000000 !important; color: #ffffff !important; } 
+        .text-blue { background-color: #ffcc00 !important; color: #000000 !important; border: 2px solid #000000 !important; }       
+        .bg-dark-green-yellow { background-color: var(--dark-green) !important; color: #ffff00 !important; } 
+        .text-available { background-color: #e3f2fd; color: var(--success); border: 2px solid var(--success); } 
+        .text-dark-green { background-color: #e8f5e9; color: var(--dark-green) !important; border: 2px solid var(--dark-green); }
+        .text-maintenance-gray { background-color: #e0e0e0 !important; color: var(--danger) !important; border: 2px solid #888888 !important; } 
+        .text-soldout { background-color: #ffcc00 !important; color: #000000 !important; border: 2px solid #000000 !important; }    
+        .text-boarding-start { background-color: #ffffff; color: #000000 !important; border: 2px solid #000000; font-weight: 900; } 
+        .text-boarding-close { background-color: #ffcc00 !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: 900; } 
+
+        .btn-alarm-stop {
+            background-color: #ffffff !important; color: #ff1251 !important; border: 2px solid #000000 !important; 
+            padding: 2px 8px; font-size: 18px !important; font-weight: 900; border-radius: 6px; cursor: pointer; 
+            animation: textBlinker 0.8s linear infinite; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .btn-tts-stop {
+            background-color: #ffffff !important; color: #ff8400 !important; border: 2px solid #000000 !important; 
+            padding: 2px 8px; font-size: 18px !important; font-weight: 900; border-radius: 6px; cursor: pointer; 
+            animation: textBlinker 1.2s linear infinite; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .admin-panel { background: #eee; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .control-row-single { display: flex; gap: 6px; align-items: center; }
+        
+        .custom-multiselect { position: relative; flex: 1; height: 42px; }
+        .select-btn { width: 100%; height: 100%; padding: 0 6px; font-size: 16px; font-weight: bold; background: white; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left; }
+        .checkbox-list { 
+            display: none; position: absolute; bottom: 44px; left: 0; right: 0;
+            background: white; border: 1px solid #ccc; border-radius: 6px; 
+            max-height: 300px; overflow-y: auto; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+        }
+        .checkbox-list.show { display: block; }
+        .time-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; font-size: 16px; font-weight: bold; border-bottom: 1px solid #eee; cursor: pointer; }
+
+        .admin-panel input, .admin-panel select, .btn-update { flex: 1; min-width: 0; height: 42px; text-align: center; font-size: 16px; font-weight: bold; border-radius: 6px; border: 1px solid #ccc; }
+        .btn-update { background: var(--primary-dark); color: white; cursor: pointer; border: none; } 
+
+        .is-guest #right-sidebar,
+        .is-guest .admin-panel, 
+        .is-guest .setting-area, 
+        .is-guest .btn-group { display: none !important; }
+        
+        .mode-v .main-container { flex-direction: row !important; }
+
+        .emergency-fullscreen-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.95); z-index: 999999;
+            flex-direction: column; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box;
+        }
+        .emergency-fullscreen-overlay.active { display: flex; }
+        .emergency-popup-box {
+            background-color: #ffffff; border: 10px solid var(--popup-highlight); border-radius: 30px;
+            width: 90%; max-width: 1400px; padding: 50px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            box-sizing: border-box; animation: popupPulse 1.5s infinite alternate;
+        }
+        
+        .popup-customer-theme {
+            border: 8px solid #ff4d4d !important;
+            background-color: #ffffff !important;
+            max-width: 1200px !important;
+            font-family: sans-serif !important;
+        }
+        .popup-customer-theme .emergency-popup-header {
+            font-size: 70px; font-weight: 900; color: #ff4d4d; margin-bottom: 30px; letter-spacing: -2px; 
+            display: flex; align-items: center; justify-content: center; gap: 20px;
+            border-bottom: 4px solid #ff4d4d; padding-bottom: 15px;
+        }
+        .popup-customer-theme .emergency-popup-body {
+            font-size: 55px; font-weight: 900; color: #111; line-height: 1.5; word-break: break-all; white-space: pre-wrap; margin-bottom: 40px; padding-top: 10px; border-top: none;
+        }
+        
+        .popup-staff-theme {
+            border: 8px solid #4A5568 !important;
+            background-color: #F7FAFC !important;
+            max-width: 1200px !important;
+            font-family: sans-serif !important;
+        }
+        .popup-staff-theme .emergency-popup-header {
+            font-size: 60px; font-weight: 900; color: #2D3748; margin-bottom: 30px; letter-spacing: -1px;
+            display: flex; align-items: center; justify-content: space-between; gap: 20px;
+            border-bottom: 4px solid #4A5568; padding-bottom: 15px;
+        }
+        .popup-staff-theme .emergency-popup-body {
+            font-size: 50px; font-weight: 900; color: #2D3748; line-height: 1.6; word-break: break-all; white-space: pre-wrap; margin-bottom: 40px; padding-top: 10px; border-top: none;
+        }
+
+        .emergency-popup-footer { font-size: 32px; font-weight: bold; color: #666; background: #f5f5f5; padding: 15px 30px; border-radius: 15px; display: inline-block; }
+        
+        @keyframes textBlinker { 0% { opacity: 1.0; } 50% { opacity: 0.35; } 100% { opacity: 1.0; } }
+        @keyframes alarmStrongBlinker {
+            0% { background-color: #ff1251 !important; color: #ffffff !important; }
+            50% { background-color: #ffffff !important; color: #ff1251 !important; }
+            100% { background-color: #ff1251 !important; color: #ffffff !important; }
+        }
+        @keyframes ttsActiveBlinker {
+            0% { background-color: #ff8400 !important; color: #ffffff !important; }
+            50% { background-color: #ffffff !important; color: #ff8400 !important; }
+            100% { background-color: #ff8400 !important; color: #ffffff !important; }
+        }
+        @keyframes popupPulse {
+            0% { transform: scale(1.0); box-shadow: 0 20px 50px rgba(255, 77, 77, 0.4); }
+            100% { transform: scale(1.02); box-shadow: 0 20px 60px rgba(255, 77, 77, 0.8); }
+        }
+
+        body:not(.is-guest) tr.row-alarm-blink { box-shadow: 0 0 25px 8px #ff1251 !important; position: relative; z-index: 50; }
+        body:not(.is-guest) tr.row-alarm-blink td { animation: alarmStrongBlinker 0.5s ease-in-out infinite; font-weight: 900 !important; border-top: 3px solid #000 !important; border-bottom: 3px solid #000 !important; }
+        body:not(.is-guest) tr.row-alarm-blink td:first-child span { font-size: 32px !important; text-shadow: 2px 2px 0px #000; }
+        body:not(.is-guest) tr.row-alarm-blink td span, body:not(.is-guest) tr.row-alarm-blink td div { color: inherit !important; }
+
+        body:not(.is-guest) tr.row-tts-blink { box-shadow: 0 0 25px 8px #ff8400 !important; position: relative; z-index: 49; }
+        body:not(.is-guest) tr.row-tts-blink td { animation: ttsActiveBlinker 0.6s ease-in-out infinite; font-weight: 900 !important; border-top: 3px solid #000 !important; border-bottom: 3px solid #000 !important; }
+        body:not(.is-guest) tr.row-tts-blink td:first-child span { font-size: 32px !important; text-shadow: 2px 2px 0px #000; }
+        body:not(.is-guest) tr.row-tts-blink td span, body:not(.is-guest) tr.row-tts-blink td div { color: inherit !important; }
+
+        .is-guest tr td { font-size: 28px !important; }
+        .is-guest tr td:first-child { font-size: 32px !important; }
+        .is-guest .status-cell-flex { font-size: 30px !important; font-weight: 900 !important; }
+        .is-guest .status-text { font-size: 32px !important; display: inline-block; }
+        .is-guest .remain-count { font-size: 38px !important; }
+        .is-guest .row-ended .remain-count, .is-guest .row-sailing-bg .remain-count { font-size: 40px; }
+        .is-guest .remain-count.shrunk-size { font-size: 38px !important; }
+
+        .force-gray-color, .force-gray-color span, .force-gray-color div { color: var(--ended-text-color) !important; }
+    </style>
+</head>
+<body id="main-body">
+
+    <!-- 🚨 최상위 오버레이 레이어: 긴급 팝업창 모달 -->
+    <div id="emergency-overlay" class="emergency-fullscreen-overlay">
+        <div id="emergency-popup-inner-box" class="emergency-popup-box">
+            <div id="emergency-popup-title-area" class="emergency-popup-header">
+                <span id="emergency-popup-main-title">📢 안내(공지) 사항</span>
+                <span id="emergency-popup-dynamic-time" style="font-size: 2rem; font-weight: bold; display: none;"></span>
+            </div>
+            <div id="emergency-popup-msg" class="emergency-popup-body">공지사항 내용이 여기에 들어갑니다.</div>
+            <div id="emergency-popup-footer" class="emergency-popup-footer">잠시 후 정상 화면으로 자동 복귀됩니다.</div>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 레이아웃 -->
+    <div class="main-container">
+        <!-- 남강 3호 (기존 김시민 1호) -->
+        <div class="boat-section" id="section-1">
+            <div class="boat-header boat3-title">
+                <div class="boat-title-area">
+                    <div class="boat-title">남강 3호</div>
+                </div>
+                <div class="boat-info-right">
+                    <div class="boat-date" id="date-1"></div>
+                    <div class="boat-clock" id="clock-1">00시00분00</div>
+                </div>
+            </div>
+            
+            <div class="notice-view-container" id="notice-view-container-1">
+                <div class="notice-title">📢 남강 3호 안내사항</div>
+                <div class="notice-content" id="notice-text-1">현재 정상 운항 중입니다.</div>
+            </div>
+
+            <div class="guest-info-banner" id="guest-banner-1">
+                <div class="info-item">●소요시간 : <span class="info-val" id="g-dur-1">-</span>분</div>
+                <div class="info-item">●운항코스 : <span class="info-val" id="g-course-1">-</span></div>
+            </div>
+
+            <div class="setting-area">
+                <div class="setting-row">
+                    <input type="text" id="time-input-1" placeholder="시간표 (쉼표 구분)" style="flex: 1;">
+                    <button onclick="updateSettings(1)" class="btn-apply-unified">변경 적용</button>
+                    <button class="btn-action-unified btn-wizard" onclick="wizard(1)">시간 자동 생성</button>
+                </div>
+                <div class="setting-row">
+                    <div class="cap-container">
+                        <span class="cap-label">탑승정원 :</span>
+                        <input type="number" id="cap-direct-1" class="cap-edit-input">
+                    </div>
+                    <div class="cap-container">
+                        <span class="cap-label">소요시간 :</span>
+                        <input type="number" id="dur-direct-1" class="cap-edit-input">
+                    </div>
+                    <div class="cap-container course-container">
+                        <span class="cap-label">운항코스 :</span>
+                        <input type="text" id="course-direct-1" class="cap-edit-input" placeholder="코스명">
+                    </div>
+                    <button class="btn-apply-unified" onclick="applyExtraInfo(1)">변경 적용</button>
+                    <button class="btn-action-unified btn-section-reset" onclick="resetBoat(1)">데이터 리셋</button>
+                </div>
+                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 6px;">
+                    <div class="cap-container" style="flex: 1; height: 40px;">
+                        <span class="cap-label" style="color: #d63031;">📢 3호 공지 :</span>
+                        <textarea id="notice-direct-1" class="notice-edit-input" placeholder="실시간 공지사항 입력"></textarea>
+                    </div>
+                    <button class="btn-apply-unified" onclick="applyNotice(1)">공지 적용</button>
+                    <button class="btn-action-unified btn-notice-delete" onclick="deleteNotice(1)">공지 삭제</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>출발시간</th>
+                            <th>총 인원/<br>티켓발권한 인원</th>
+                            <th>티켓발권<br>가능한 인원</th>
+                            <th>운항상태</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-1"></tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <div class="control-row-single">
+                    <div class="custom-multiselect">
+                        <button class="select-btn" id="select-btn-1" onclick="toggleDropdown(1)">시간 선택</button>
+                        <div class="checkbox-list" id="list-1"></div>
+                    </div>
+                    <input type="number" id="input-1" placeholder="예약인원수">
+                    <select id="status-1">
+                        <option value="auto">자동상태</option>
+                        <option value="탑승시작">탑승시작(강제)</option>
+                        <option value="티켓발권마감">티켓발권마감(강제)</option>
+                        <option value="탑승(승선)마감">탑승마감(강제)</option>
+                        <option value="운항없음">운항없음</option>
+                        <option value="기상악화 운항중지">기상악화</option>
+                        <option value="수문방류 운항중지">수문방류</option>
+                        <option value="폭죽놀이 운항중지">폭죽놀이</option>
+                        <option value="에너지절약 운항중지">에너지절약</option>
+                        <option value="점 검 중">점검중</option>
+                    </select>
+                    <button class="btn-update" onclick="applyChanges(1)">변경 적용</button>
+                </div>
+            </div>
+
+            <span id="page-indicator-1" class="page-badge">[-]</span>
+        </div>
+
+        <!-- 남강 4호 (기존 김시민 2호) -->
+        <div class="boat-section" id="section-2">
+            <div class="boat-header boat4-title">
+                <div class="boat-title-area">
+                    <div class="boat-title">남강 4호</div>
+                </div>
+                <div class="boat-info-right">
+                    <div class="boat-date" id="date-2"></div>
+                    <div class="boat-clock" id="clock-2">00시00분00</div>
+                </div>
+            </div>
+            
+            <div class="notice-view-container" id="notice-view-container-2">
+                <div class="notice-title">📢 남강 4호 안내사항</div>
+                <div class="notice-content" id="notice-text-2">현재 정상 운항 중입니다.</div>
+            </div>
+
+            <div class="guest-info-banner" id="guest-banner-2">
+                <div class="info-item">●소요시간 : <span class="info-val" id="g-dur-2">-</span>분</div>
+                <div class="info-item">●운항코스 : <span class="info-val" id="g-course-2">-</span></div>
+            </div>
+
+            <div class="setting-area">
+                <div class="setting-row">
+                    <input type="text" id="time-input-2" placeholder="시간표 (쉼표 구분)" style="flex: 1;">
+                    <button onclick="updateSettings(2)" class="btn-apply-unified">변경 적용</button>
+                    <button class="btn-action-unified btn-wizard" onclick="wizard(2)">시간 자동 생성</button>
+                </div>
+                <div class="setting-row">
+                    <div class="cap-container">
+                        <span class="cap-label">탑승정원 :</span>
+                        <input type="number" id="cap-direct-2" class="cap-edit-input">
+                    </div>
+                    <div class="cap-container">
+                        <span class="cap-label">소요시간 :</span>
+                        <input type="number" id="dur-direct-2" class="cap-edit-input">
+                    </div>
+                    <div class="cap-container course-container">
+                        <span class="cap-label">운항코스 :</span>
+                        <input type="text" id="course-direct-2" class="cap-edit-input" placeholder="코스명">
+                    </div>
+                    <button class="btn-apply-unified" onclick="applyExtraInfo(2)">변경 적용</button>
+                    <button class="btn-action-unified btn-section-reset" onclick="resetBoat(2)">데이터 리셋</button>
+                </div>
+                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 6px;">
+                    <div class="cap-container" style="flex: 1; height: 40px;">
+                        <span class="cap-label" style="color: #d63031;">📢 4호 공지 :</span>
+                        <textarea id="notice-direct-2" class="notice-edit-input" placeholder="실시간 공지사항 입력"></textarea>
+                    </div>
+                    <button class="btn-apply-unified" onclick="applyNotice(2)">공지 적용</button>
+                    <button class="btn-action-unified btn-notice-delete" onclick="deleteNotice(2)">공지 삭제</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>출발시간</th>
+                            <th>총 인원/<br>티켓발권한 인원</th>
+                            <th>티켓발권<br>가능한 인원</th>
+                            <th>운항상태</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-2"></tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <div class="control-row-single">
+                    <div class="custom-multiselect">
+                        <button class="select-btn" id="select-btn-2" onclick="toggleDropdown(2)">시간 선택</button>
+                        <div class="checkbox-list" id="list-2"></div>
+                    </div>
+                    <input type="number" id="input-2" placeholder="예약인원수">
+                    <select id="status-2">
+                        <option value="auto">자동상태</option>
+                        <option value="탑승시작">탑승시작(강제)</option>
+                        <option value="티켓발권마감">티켓발권마감(강제)</option>
+                        <option value="탑승(승선)마감">탑승마감(강제)</option>
+                        <option value="운항없음">운항없음</option>
+                        <option value="기상악화 운항중지">기상악화</option>
+                        <option value="수문방류 운항중지">수문방류</option>
+                        <option value="폭죽놀이 운항중지">폭죽놀이</option>
+                        <option value="에너지절약 운항중지">에너지절약</option>
+                        <option value="점 검 중">점검중</option>
+                    </select>
+                    <button class="btn-update" onclick="applyChanges(2)">변경 적용</button>
+                </div>
+            </div>
+
+            <span id="page-indicator-2" class="page-badge">[-]</span>
+        </div>
+
+        <!-- 남강 5호 (추가) -->
+        <div class="boat-section" id="section-3">
+            <div class="boat-header boat5-title">
+                <div class="boat-title-area">
+                    <div class="boat-title">남강 5호</div>
+                </div>
+                <div class="boat-info-right">
+                    <div class="boat-date" id="date-3"></div>
+                    <div class="boat-clock" id="clock-3">00시00분00</div>
+                </div>
+            </div>
+            
+            <div class="notice-view-container" id="notice-view-container-3">
+                <div class="notice-title">📢 남강 5호 안내사항</div>
+                <div class="notice-content" id="notice-text-3">현재 정상 운항 중입니다.</div>
+            </div>
+
+            <div class="guest-info-banner" id="guest-banner-3">
+                <div class="info-item">●소요시간 : <span class="info-val" id="g-dur-3">-</span>분</div>
+                <div class="info-item">●운항코스 : <span class="info-val" id="g-course-3">-</span></div>
+            </div>
+
+            <div class="setting-area">
+                <div class="setting-row">
+                    <input type="text" id="time-input-3" placeholder="시간표 (쉼표 구분)" style="flex: 1;">
+                    <button onclick="updateSettings(3)" class="btn-apply-unified">변경 적용</button>
+                    <button class="btn-action-unified btn-wizard" onclick="wizard(3)">시간 자동 생성</button>
+                </div>
+                <div class="setting-row">
+                    <div class="cap-container">
+                        <span class="cap-label">탑승정원 :</span>
+                        <input type="number" id="cap-direct-3" class="cap-edit-input">
+                    </div>
+                    <div class="cap-container">
+                        <span class="cap-label">소요시간 :</span>
+                        <input type="number" id="dur-direct-3" class="cap-edit-input">
+                    </div>
+                    <div class="cap-container course-container">
+                        <span class="cap-label">운항코스 :</span>
+                        <input type="text" id="course-direct-3" class="cap-edit-input" placeholder="코스명">
+                    </div>
+                    <button class="btn-apply-unified" onclick="applyExtraInfo(3)">변경 적용</button>
+                    <button class="btn-action-unified btn-section-reset" onclick="resetBoat(3)">데이터 리셋</button>
+                </div>
+                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 6px;">
+                    <div class="cap-container" style="flex: 1; height: 40px;">
+                        <span class="cap-label" style="color: #d63031;">📢 5호 공지 :</span>
+                        <textarea id="notice-direct-3" class="notice-edit-input" placeholder="실시간 공지사항 입력"></textarea>
+                    </div>
+                    <button class="btn-apply-unified" onclick="applyNotice(3)">공지 적용</button>
+                    <button class="btn-action-unified btn-notice-delete" onclick="deleteNotice(3)">공지 삭제</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>출발시간</th>
+                            <th>총 인원/<br>티켓발권한 인원</th>
+                            <th>티켓발권<br>가능한 인원</th>
+                            <th>운항상태</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-3"></tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel">
+                <div class="control-row-single">
+                    <div class="custom-multiselect">
+                        <button class="select-btn" id="select-btn-3" onclick="toggleDropdown(3)">시간 선택</button>
+                        <div class="checkbox-list" id="list-3"></div>
+                    </div>
+                    <input type="number" id="input-3" placeholder="예약인원수">
+                    <select id="status-3">
+                        <option value="auto">자동상태</option>
+                        <option value="탑승시작">탑승시작(강제)</option>
+                        <option value="티켓발권마감">티켓발권마감(강제)</option>
+                        <option value="탑승(승선)마감">탑승마감(강제)</option>
+                        <option value="운항없음">운항없음</option>
+                        <option value="기상악화 운항중지">기상악화</option>
+                        <option value="수문방류 운항중지">수문방류</option>
+                        <option value="폭죽놀이 운항중지">폭죽놀이</option>
+                        <option value="에너지절약 운항중지">에너지절약</option>
+                        <option value="점 검 중">점검중</option>
+                    </select>
+                    <button class="btn-update" onclick="applyChanges(3)">변경 적용</button>
+                </div>
+            </div>
+
+            <span id="page-indicator-3" class="page-badge">[-]</span>
+        </div>
+    </div>
+
+    <!-- 우측 제어 사이드바 -->
+    <div id="right-sidebar">
+        <div id="sidebar-title">⚙️ 시스템 설정 및 관리</div>
+        
+        <div class="btn-group-top">
+            <button class="btn-open-guest" onclick="openGuestWindow('h')">📺 1번 화면 손님용 오픈</button>
+            <button class="btn-open-guest" onclick="openGuestWindow('v')" style="background-color: #ffcc00;">📺 2번 화면 근무자용 오픈</button>
+            <button class="btn-open-guest btn-reset-all" onclick="confirmResetAll()">⚠️ 전체 데이터 초기화</button>
+        </div>
+
+        <!-- 🔔 모듈 1: 알람 -->
+        <div class="alarm-toggle-container">
+            <div class="alarm-radio-row">
+                <label><input type="radio" name="alarm_sound" value="on" checked onchange="handleAlarmToggle()"> 🔊 알람 ON</label>
+                <label><input type="radio" name="alarm_sound" value="off" onchange="handleAlarmToggle()"> 🔇 OFF</label>
+            </div>
+            <div class="alarm-time-setting">
+                <div class="setting-item-row">
+                    <span>출발 전 설정:</span>
+                    <div>
+                        <input type="number" id="alarm-trigger-minutes" value="10" min="1" max="60" onchange="saveAlarmConfig()"> 분 전 알람 🔔
+                    </div>
+                </div>
+                <div class="setting-item-row">
+                    <span>알람 지속 시간:</span>
+                    <div>
+                        <input type="number" id="alarm-duration-seconds" value="30" min="1" max="300" onchange="saveAlarmConfig()"> 초 동안 울림
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📢 모듈 2: TTS 방송 -->
+        <div class="alarm-toggle-container" style="border-color: var(--tts-highlight);">
+            <div class="alarm-radio-row">
+                <label><input type="radio" name="tts_broadcast" class="tts-accent" value="on" checked onchange="handleTtsToggle()"> 📢 방송 ON</label>
+                <label><input type="radio" name="tts_broadcast" class="tts-accent" value="off" onchange="handleTtsToggle()"> 🔇 OFF</label>
+            </div>
+            <div class="alarm-time-setting">
+                <div class="setting-item-row">
+                    <span>방송 시작 조건:</span>
+                    <div>
+                        출발 <input type="number" id="tts-trigger-minutes" class="tts-input" value="5" min="1" max="60" onchange="saveAlarmConfig()"> 분 전
+                    </div>
+                </div>
+                <div class="setting-item-row" style="color: var(--tts-highlight);">
+                    <span>방송 반복 횟수:</span>
+                    <div>
+                        <input type="number" id="tts-repeat-count" class="tts-input" value="2" min="1" max="5" onchange="saveAlarmConfig()"> 번 반복 🗣️
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📺 모듈 3: 화면전환기 -->
+        <div class="alarm-toggle-container" style="border-color: var(--rotation-highlight);">
+            <div class="box-title-sm" style="color: var(--rotation-highlight);">📺 자동 화면전환기 설정</div>
+            <div class="alarm-radio-row">
+                <label><input type="radio" name="rotation_mode" class="rotation-accent" value="on" checked onchange="handleRotationToggle()"> ▶️ ON</label>
+                <label><input type="radio" name="rotation_mode" class="rotation-accent" value="off" onchange="handleRotationToggle()"> ⏸️ OFF</label>
+            </div>
+            <div class="alarm-time-setting" style="border-top: 1px solid #444; padding-top: 10px;">
+                <div class="setting-item-row" style="margin-bottom: 5px;">
+                    <span style="color: #fff;">대상 화면 선택:</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px; padding-left: 5px;">
+                    <label style="font-size: 14px; font-weight: normal; color: #ccc;">
+                        <input type="checkbox" id="rotation-target-guest" class="rotation-accent" checked onchange="saveAlarmConfig()"> 1번 화면 손님용 적용
+                    </label>
+                    <label style="font-size: 14px; font-weight: normal; color: #ccc;">
+                        <input type="checkbox" id="rotation-target-worker" class="rotation-accent" checked onchange="saveAlarmConfig()"> 2번 화면 근무자용 적용
+                    </label>
+                </div>
+                <div class="setting-item-row" style="border-top: 1px dashed #444; padding-top: 8px; margin-top: 5px;">
+                    <span>화면 전환 주기:</span>
+                    <div>
+                        <input type="number" id="page-interval-seconds" class="rotation-input" value="5" min="2" max="60" onchange="saveAlarmConfig()"> 초 간격
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🚨 모듈 4: 긴급 팝업 -->
+        <div class="alarm-toggle-container" style="border-color: var(--popup-highlight);">
+            <div class="box-title-sm" style="color: var(--popup-highlight);">🚨 긴급 전체화면 공지 팝업 설정</div>
+            
+            <div style="background: #1a1e24; padding: 8px; border-radius: 6px; border: 1px dashed var(--popup-highlight); margin-bottom: 3px;">
+                <div class="box-title-sm" style="color: #fff; font-size: 13px; margin-bottom: 5px;">🔴 수동 즉시 발동 스위치</div>
+                <div class="alarm-radio-row">
+                    <label style="color: #ff4d4d;"><input type="radio" name="popup_manual_switch" class="popup-accent" value="forced_on" onchange="handleManualPopupToggle(this.value)"> ⚡ 강제ON</label>
+                    <label><input type="radio" name="popup_manual_switch" class="popup-accent" value="forced_off" checked onchange="handleManualPopupToggle(this.value)"> 💤 해제</label>
+                </div>
+            </div>
+
+            <div class="box-title-sm" style="color: #aaa; font-size: 12px; text-align: left; padding-left: 5px;">🕒 예약 자동 스케줄 설정</div>
+            <div class="alarm-radio-row">
+                <label><input type="radio" name="popup_mode" class="popup-accent" value="on" checked onchange="saveAlarmConfig()"> ▶️ ON</label>
+                <label><input type="radio" name="popup_mode" class="popup-accent" value="off" onchange="saveAlarmConfig()"> ⏸️ OFF</label>
+            </div>
+            <div class="alarm-time-setting">
+                <div class="setting-item-row">
+                    <span>표출 시작 시각:</span>
+                    <div class="popup-select-container">
+                        <select id="popup-hour" class="popup-select" onchange="saveAlarmConfig()"></select> 시
+                        <select id="popup-minute" class="popup-select" onchange="saveAlarmConfig()"></select> 분
+                    </div>
+                </div>
+                <div class="setting-item-row">
+                    <span>팝업 유지 시간:</span>
+                    <div>
+                        <input type="number" id="popup-duration-seconds" class="popup-input" value="20" min="0" max="600" onchange="saveAlarmConfig()"> 초 <span style="font-size:12px;color:#aaa;">(0은 무제한)</span>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+                    <span>공지 문구 내용:</span>
+                    <textarea id="popup-message-text" class="popup-textarea" placeholder="전체화면으로 띄울 공지내용을 적으세요" onchange="saveAlarmConfig()">기상 악화 및 정비 관계로 인하여 잠시 후 다음 항차 운항이 지연될 예정이오니 양해 바랍니다.</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- ==========================================================================
+   Firebase 모듈형 SDK 스크립트 연결 및 통합 로직
+   ========================================================================== -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // ⚠️ 아래 firebaseConfig 객체의 값을 본인의 Firebase 프로젝트 설정값으로 변경하세요.
+    const firebaseConfig = {
+  apiKey: "AIzaSyATYmw5W8E9KniqYfbBrA2Z4pzfE4DWZ9M",
+  authDomain: "namkang930.firebaseapp.com",
+  databaseURL: "https://namkang930-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "namkang930",
+  storageBucket: "namkang930.firebasestorage.app",
+  messagingSenderId: "180094165319",
+  appId: "1:180094165319:web:1c07b0cc7865be363a6c62"
+};
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 기본 선박 데이터 구조 (1: 남강 3호, 2: 남강 4호, 3: 남강 5호)
+    const defaultBoatData = {
+        1: { capacity: 16, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:15", "13:45", "14:15", "14:45", "15:15", "15:45", "16:15", "16:45", "17:15", "18:15", "18:45", "19:15", "19:45", "20:15", "20:45", "21:15", "21:45", "22:15"], seats: {}, customStatus: {} },
+        2: { capacity: 10, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:25", "13:55", "14:25", "14:55", "15:25", "15:55", "16:25", "16:55", "17:25", "18:25", "18:55", "19:25", "19:55", "20:25", "20:55", "21:25", "21:55", "22:25"], seats: {}, customStatus: {} },
+        3: { capacity: 10, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:35", "14:05", "14:35", "15:05", "15:35", "16:05", "16:35", "17:05", "17:35", "18:35", "19:05", "19:35", "20:05", "20:35", "21:05", "21:35", "22:05", "22:35"], seats: {}, customStatus: {} }
+    };
+
+    // 기본 설정 데이터 구조
+    const defaultConfigData = {
+        lastDate: "",
+        alarmMinutes: 10,
+        alarmSeconds: 30,
+        pageIntervalSeconds: 5,
+        ttsBroadcast: "on",
+        ttsMinutes: 5,
+        ttsRepeatCount: 2,
+        rotationMode: "on",
+        rotationTargetGuest: true,
+        rotationTargetWorker: true,
+        popupMode: "on",
+        popupHour: "12",
+        popupMinute: "00",
+        popupDurationSeconds: 20,
+        popupMessageText: "기상 악화 및 정비 관계로 인하여 잠시 후 다음 항차 운항이 지연될 예정이오니 양해 바랍니다.",
+        popupActiveUntil: 0,
+        popupManualSwitch: "forced_off"
+    };
+
+    let boatData = JSON.parse(JSON.stringify(defaultBoatData));
+    let configData = JSON.parse(JSON.stringify(defaultConfigData));
+
+    // 메모리 관리용 객체
+    let playedAlarms = {};
+    let playedBroadcasts = {};
+    let playedEmergencyPopups = {};
+    let activeVisualAlarms = { 1: [], 2: [], 3: [] };
+    let activeTtsBroadcasts = { 1: [], 2: [], 3: [] };
+    let alarmSoundIntervals = {};
+
+    let guestPageStatus = {
+        1: { currentPage: 1, lastRotationTime: Date.now() },
+        2: { currentPage: 1, lastRotationTime: Date.now() },
+        3: { currentPage: 1, lastRotationTime: Date.now() }
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode'); 
+    if (mode === 'guest_h') document.body.classList.add('is-guest', 'mode-h'); 
+    if (mode === 'guest_v') document.body.classList.add('is-guest', 'mode-v'); 
+    const isGuest = mode && mode.startsWith('guest');
+
+    function buildPopupTimeSelectOptions() {
+        const hourSelect = document.getElementById('popup-hour');
+        const minuteSelect = document.getElementById('popup-minute');
+        if(!hourSelect || !minuteSelect) return;
+
+        hourSelect.innerHTML = ""; minuteSelect.innerHTML = "";
+        for(let h=0; h<24; h++) {
+            let hStr = String(h).padStart(2, '0');
+            hourSelect.options.add(new Option(hStr, hStr));
+        }
+        for(let m=0; m<60; m+=5) {
+            let mStr = String(m).padStart(2, '0');
+            minuteSelect.options.add(new Option(mStr, mStr));
+        }
+    }
+    buildPopupTimeSelectOptions();
+
+    // Firebase 데이터 저장 함수들
+    function saveBoatData() {
+        set(ref(db, 'namgang/boatData'), boatData);
+    }
+
+    function saveConfigData() {
+        if (isGuest) return;
+        set(ref(db, 'namgang/configData'), configData);
+    }
+
+    // Window 전역에 함수 등록
+    window.handleManualPopupToggle = function(val) {
+        if (isGuest) return;
+        configData.popupManualSwitch = val;
+        saveConfigData();
+    };
+
+    window.saveAlarmConfig = function() {
+        if (isGuest) return; 
+
+        let trigVal = parseInt(document.getElementById('alarm-trigger-minutes').value) || 10;
+        if(trigVal < 1) trigVal = 1; if(trigVal > 60) trigVal = 60;
+        configData.alarmMinutes = trigVal;
+
+        let durVal = parseInt(document.getElementById('alarm-duration-seconds').value) || 30;
+        if(durVal < 1) durVal = 1; if(durVal > 300) durVal = 300;
+        configData.alarmSeconds = durVal;
+
+        let rotVal = parseInt(document.getElementById('page-interval-seconds').value) || 5;
+        if(rotVal < 2) rotVal = 2; if(rotVal > 60) rotVal = 60;
+        configData.pageIntervalSeconds = rotVal;
+
+        const ttsOption = document.querySelector('input[name="tts_broadcast"]:checked');
+        if (ttsOption) configData.ttsBroadcast = ttsOption.value;
+        
+        let ttsMins = parseInt(document.getElementById('tts-trigger-minutes').value) || 5;
+        if (ttsMins < 1) ttsMins = 1; if (ttsMins > 60) ttsMins = 60;
+        configData.ttsMinutes = ttsMins;
+
+        let ttsRepeat = parseInt(document.getElementById('tts-repeat-count').value) || 1;
+        if (ttsRepeat < 1) ttsRepeat = 1; if (ttsRepeat > 5) ttsRepeat = 5;
+        configData.ttsRepeatCount = ttsRepeat;
+
+        const rotationOption = document.querySelector('input[name="rotation_mode"]:checked');
+        if (rotationOption) configData.rotationMode = rotationOption.value;
+
+        configData.rotationTargetGuest = document.getElementById('rotation-target-guest').checked;
+        configData.rotationTargetWorker = document.getElementById('rotation-target-worker').checked;
+
+        const popupOption = document.querySelector('input[name="popup_mode"]:checked');
+        if (popupOption) configData.popupMode = popupOption.value;
+        
+        configData.popupHour = document.getElementById('popup-hour').value;
+        configData.popupMinute = document.getElementById('popup-minute').value;
+
+        let popDur = parseInt(document.getElementById('popup-duration-seconds').value);
+        if (isNaN(popDur) || popDur < 0) popDur = 0; 
+        configData.popupDurationSeconds = popDur;
+
+        configData.popupMessageText = document.getElementById('popup-message-text').value;
+
+        saveConfigData();
+    };
+
+    window.toggleDropdown = function(id) {
+        if(isGuest) return; 
+        const list = document.getElementById(`list-${id}`);
+        const isShow = list.classList.contains('show');
+        document.querySelectorAll('.checkbox-list').forEach(el => el.classList.remove('show'));
+        if(!isShow) list.classList.add('show');
+    };
+
+    window.updateSelectBtnText = function(id) {
+        const checked = Array.from(document.querySelectorAll(`.chk-${id}:checked`));
+        const btn = document.getElementById(`select-btn-${id}`);
+        if(!btn) return;
+        if(checked.length === 0) btn.innerText = "시간 선택";
+        else if(checked.length === 1) btn.innerText = checked[0].value;
+        else btn.innerText = checked.length + "개 선택됨";
+    };
+
+    window.confirmResetAll = function() {
+        if (confirm("🚨 전체 데이터를 초기화하시겠습니까?\n모든 선박의 정보가 복구됩니다.")) {
+            boatData = JSON.parse(JSON.stringify(defaultBoatData));
+            configData = JSON.parse(JSON.stringify(defaultConfigData));
+            saveBoatData();
+            saveConfigData();
+        }
+    };
+
+    window.applyExtraInfo = function(id) {
+        const cap = parseInt(document.getElementById(`cap-direct-${id}`).value);
+        const dur = parseInt(document.getElementById(`dur-direct-${id}`).value);
+        const cou = document.getElementById(`course-direct-${id}`).value;
+        if (!isNaN(cap)) boatData[id].capacity = cap;
+        if (!isNaN(dur)) boatData[id].duration = dur;
+        boatData[id].course = cou;
+        saveBoatData(); updateUI(); alert("정보가 변경되었습니다.");
+    };
+
+    window.applyNotice = function(id) {
+        const text = document.getElementById(`notice-direct-${id}`).value;
+        boatData[id].notice = text || "현재 정상 운항 중입니다.";
+        saveBoatData(); updateUI(); alert(`남강 ${id + 2}호의 실시간 공지사항이 반영되었습니다.`);
+    };
+
+    window.deleteNotice = function(id) {
+        if(confirm(`남강 ${id + 2}호의 실시간 공지사항을 삭제하시겠습니까?`)) {
+            boatData[id].notice = "현재 정상 운항 중입니다.";
+            const noticeIn = document.getElementById(`notice-direct-${id}`);
+            if(noticeIn) noticeIn.value = ""; 
+            saveBoatData(); updateUI(); alert(`남강 ${id + 2}호의 공지사항이 삭제되었습니다.`);
+        }
+    };
+
+    window.updateSettings = function(id) {
+        const timeStr = document.getElementById(`time-input-${id}`).value;
+        if (timeStr) boatData[id].times = timeStr.split(',').map(s => s.trim());
+        saveBoatData(); updateUI(); alert("시간표가 적용되었습니다.");
+    };
+
+    window.wizard = function(id) {
+        const start = prompt("시작 시간 (예: 10:00)", "10:00"); if (!start) return;
+        const gap = prompt("간격(분)", "60"), count = prompt("총 횟수", "10");
+        let [hh, mm] = start.split(':').map(Number), newTimes = [];
+        for(let i=0; i<count; i++) {
+            newTimes.push(`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`);
+            mm += parseInt(gap); hh += Math.floor(mm/60); mm %= 60; hh %= 24;
+        }
+        boatData[id].times = newTimes; saveBoatData(); updateUI();
+    };
+
+    window.applyChanges = function(id) {
+        const checkedNodes = document.querySelectorAll(`.chk-${id}:checked`);
+        const input = document.getElementById('input-' + id).value;
+        const status = document.getElementById('status-' + id).value;
+        if (checkedNodes.length === 0) return alert("변경할 시간을 먼저 선택하세요.");
+        
+        if (!boatData[id].seats) boatData[id].seats = {};
+        if (!boatData[id].customStatus) boatData[id].customStatus = {};
+
+        checkedNodes.forEach(node => {
+            const time = node.value;
+            if (input !== "") {
+                const val = parseInt(input);
+                if (val >= 0) boatData[id].seats[time] = val;
+            }
+            boatData[id].customStatus[time] = status;
+            node.checked = false;
+        });
+        
+        document.getElementById('input-' + id).value = ""; 
+        document.getElementById('list-' + id).classList.remove('show');
+        window.updateSelectBtnText(id); 
+        saveBoatData(); updateUI();
+        alert("선택한 시간의 운항 상태가 성공적으로 변경되었습니다.");
+    };
+
+    window.adjust = function(id, time, amt) {
+        if (!boatData[id].seats) boatData[id].seats = {};
+        let cur = boatData[id].seats[time] || 0, next = cur + amt, cap = boatData[id].capacity;
+        if (amt === 1 && cur < cap) { boatData[id].seats[time] = next; saveBoatData(); updateUI(); }
+        else if (amt === -1 && cur > 0) { boatData[id].seats[time] = next; saveBoatData(); updateUI(); }
+    };
+
+    window.resetBoat = function(id) {
+        if(confirm('해당 선박의 현황을 초기화할까요?')) {
+            boatData[id].seats = {}; boatData[id].customStatus = {}; boatData[id].notice = "현재 정상 운항 중입니다."; 
+            saveBoatData(); updateUI();
+        }
+    };
+
+    window.openGuestWindow = function(type) {
+        window.open(window.location.pathname + `?mode=guest_${type}`, `GuestWin_${type}_` + Date.now(), 'width=1200,height=900');
+    };
+
+    window.handleAlarmToggle = function() {
+        const option = document.querySelector('input[name="alarm_sound"]:checked');
+        if (option && option.value === 'off') { stopAllAlarms(); updateUI(); }
+    };
+
+    window.handleTtsToggle = function() {
+        window.saveAlarmConfig(); 
+        const ttsOption = document.querySelector('input[name="tts_broadcast"]:checked');
+        if (ttsOption && ttsOption.value === 'off') { stopAllTtsBroadcasts(); updateUI(); }
+    };
+
+    window.handleRotationToggle = function() {
+        window.saveAlarmConfig(); updateUI();
+    };
+
+    window.dismissAlarm = function(id, time) {
+        const alarmKey = `${id}-${time}`;
+        if (alarmSoundIntervals[alarmKey]) { clearInterval(alarmSoundIntervals[alarmKey]); delete alarmSoundIntervals[alarmKey]; }
+        activeVisualAlarms[id] = activeVisualAlarms[id].filter(t => t !== time);
+        updateUI();
+    };
+
+    window.dismissTtsBroadcast = function(id, time) {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        activeTtsBroadcasts[id] = activeTtsBroadcasts[id].filter(t => t !== time);
+        updateUI();
+    };
+
+    // 알람 비프 사운드
+    function playSingleBeepSignal(ctx, nowTime) {
+        const osc1 = ctx.createOscillator(); const gain1 = ctx.createGain();
+        osc1.type = 'sine'; osc1.frequency.setValueAtTime(587.33, nowTime);
+        gain1.gain.setValueAtTime(0.25, nowTime); gain1.gain.exponentialRampToValueAtTime(0.01, nowTime + 0.35);
+        osc1.connect(gain1); gain1.connect(ctx.destination); osc1.start(nowTime); osc1.stop(nowTime + 0.35);
+
+        const osc2 = ctx.createOscillator(); const gain2 = ctx.createGain();
+        osc2.type = 'sine'; osc2.frequency.setValueAtTime(440.00, nowTime + 0.15);
+        gain2.gain.setValueAtTime(0.25, nowTime + 0.15); gain2.gain.exponentialRampToValueAtTime(0.01, nowTime + 0.6);
+        osc2.connect(gain2); gain2.connect(ctx.destination); osc2.start(nowTime + 0.15); osc2.stop(nowTime + 0.6);
+    }
+
+    function startInfiniteAlarmLoop(id, time) {
+        if (!activeVisualAlarms[id].includes(time)) activeVisualAlarms[id].push(time);
+        updateUI(); 
+
+        const alarmKey = `${id}-${time}`;
+        if (alarmSoundIntervals[alarmKey]) return;
+
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext(); const alarmStartTime = Date.now();
+
+            alarmSoundIntervals[alarmKey] = setInterval(() => {
+                const option = document.querySelector('input[name="alarm_sound"]:checked');
+                if (!option || option.value === 'off') { window.dismissAlarm(id, time); return; }
+
+                const maxDurationSeconds = configData.alarmSeconds || 30;
+                const elapsedSeconds = (Date.now() - alarmStartTime) / 1000;
+
+                if (elapsedSeconds >= maxDurationSeconds) { window.dismissAlarm(id, time); return; }
+                playSingleBeepSignal(ctx, ctx.currentTime);
+            }, 1000);
+        } catch(e) { console.log("오디오 디바이스 에러"); }
+    }
+
+    function stopAllAlarms() {
+        for (let key in alarmSoundIntervals) clearInterval(alarmSoundIntervals[key]);
+        alarmSoundIntervals = {}; activeVisualAlarms = { 1: [], 2: [], 3: [] };
+    }
+
+    function stopAllTtsBroadcasts() {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        activeTtsBroadcasts = { 1: [], 2: [], 3: [] };
+    }
+
+    // 백그라운드 체크 엔진
+    function checkTenMinutesAlarm(id, times) {
+        if (isGuest) return; 
+        const option = document.querySelector('input[name="alarm_sound"]:checked');
+        if (!option || option.value === 'off') return;
+
+        const triggerMinutes = configData.alarmMinutes || 10;
+        const now = new Date();
+        
+        times.forEach(t => {
+            const [tH, tM] = t.split(':').map(Number);
+            const targetTime = new Date(); targetTime.setHours(tH, tM, 0, 0);
+            const diffMs = targetTime.getTime() - now.getTime();
+            const diffMins = diffMs / 60000;
+
+            if (diffMins > (triggerMinutes - 0.05) && diffMins <= triggerMinutes) {
+                const uniqueKey = `${id}-${t}-${now.getMinutes()}`;
+                if (!playedAlarms[uniqueKey]) {
+                    const cStat = (boatData[id].customStatus && boatData[id].customStatus[t]) || "auto";
+                    const isHalted = cStat.includes("중지") || cStat === "운항없음" || cStat === "점 검 중" || cStat === "점검중";
+                    
+                    if (!isHalted) { playedAlarms[uniqueKey] = true; startInfiniteAlarmLoop(id, t); }
+                }
+            }
+        });
+    }
+
+    function checkTtsSpeechBroadcast(id, times) {
+        if (isGuest) return; 
+        const ttsOption = document.querySelector('input[name="tts_broadcast"]:checked');
+        if (!ttsOption || ttsOption.value === 'off') return;
+
+        const ttsTriggerMinutes = configData.ttsMinutes || 5;
+        const maxLoops = configData.ttsRepeatCount || 1;
+        const now = new Date();
+
+        times.forEach(t => {
+            const [tH, tM] = t.split(':').map(Number);
+            const targetTime = new Date(); targetTime.setHours(tH, tM, 0, 0);
+            const diffMs = targetTime.getTime() - now.getTime();
+            const diffMins = diffMs / 60000;
+
+            if (diffMins > (ttsTriggerMinutes - 0.05) && diffMins <= ttsTriggerMinutes) {
+                const broadcastKey = `${id}-${t}-${now.getMinutes()}`;
+                if (!playedBroadcasts[broadcastKey]) {
+                    const data = boatData[id]; 
+                    const booked = (data.seats && data.seats[t]) || 0;
+                    const cStat = (data.customStatus && data.customStatus[t]) || "auto";
+                    
+                    if (booked <= 0) return;
+
+                    const isHalted = cStat.includes("중지") || cStat === "운항없음" || cStat === "점 검 중" || cStat === "점검중";
+
+                    if (!isHalted) {
+                        playedBroadcasts[broadcastKey] = true;
+                        if (!activeTtsBroadcasts[id].includes(t)) activeTtsBroadcasts[id].push(t);
+                        updateUI();
+
+                        const boatName = `남강 ${id + 2}호`; 
+                        const speechText = `남강호 매표소에서 안내 드립니다. 잠시 후 ${tH}시 ${tM}분에 출발하는 ${boatName}에 탑승하시는 탑승객분들은, 탑승장소인 망진나루로 이동하여 주시기 바랍니다. ${boatName}는 망진나루를 출발하여 진주성 촉석루 앞까지, 약 20분 정도 소요되는 코스로 운항하고 있습니다. 감사합니다.`;
+
+                        executeNativeTTS(speechText, maxLoops, id, t);
+                    }
+                }
+            }
+        });
+    }
+
+    function executeNativeTTS(phrase, remainingLoops, id, time) {
+        if (!('speechSynthesis' in window)) return;
+        if (remainingLoops <= 0 || !activeTtsBroadcasts[id].includes(time)) { window.dismissTtsBroadcast(id, time); return; }
+        const ttsOption = document.querySelector('input[name="tts_broadcast"]:checked');
+        if (!ttsOption || ttsOption.value === 'off') { window.dismissTtsBroadcast(id, time); return; }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(phrase); const voices = window.speechSynthesis.getVoices();
+        
+        let selectedVoice = voices.find(voice => voice.name.includes('Google') && voice.name.includes('Female') && voice.lang.includes('ko'));
+        if (!selectedVoice) selectedVoice = voices.find(voice => voice.name.includes('Google') && voice.lang.includes('ko'));
+        if (!selectedVoice) selectedVoice = voices.find(voice => voice.name.includes('Natural') && voice.lang.includes('ko'));
+        if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === 'ko-KR' || voice.lang.startsWith('ko'));
+        
+        if (selectedVoice) utterance.voice = selectedVoice;
+        utterance.lang = 'ko-KR'; utterance.rate = 0.94; utterance.pitch = 0.98;
+        
+        utterance.onend = function() {
+            const nextLoops = remainingLoops - 1;
+            if (nextLoops > 0 && activeTtsBroadcasts[id].includes(time)) { 
+                setTimeout(() => { executeNativeTTS(phrase, nextLoops, id, time); }, 3000);
+            } else { window.dismissTtsBroadcast(id, time); }
+        };
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function checkEmergencyPopupSchedule() {
+        const manualSwitchSetting = configData.popupManualSwitch || 'forced_off';
+        const msgBox = document.getElementById('emergency-popup-msg');
+        const footerBox = document.getElementById('emergency-popup-footer');
+        const popupMsg = configData.popupMessageText || "";
+        const overlay = document.getElementById('emergency-overlay');
+        const innerBox = document.getElementById('emergency-popup-inner-box');
+        const mainTitle = document.getElementById('emergency-popup-main-title');
+        const timeDisplay = document.getElementById('emergency-popup-dynamic-time');
+
+        if (!isGuest) {
+            overlay.classList.remove('active'); return;
+        }
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const date = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+
+        if (mode === 'guest_h') {
+            innerBox.className = "emergency-popup-box popup-customer-theme";
+            mainTitle.innerText = "🚨 긴급 공지사항";
+            timeDisplay.innerText = `${year}년 ${month}월 ${date}일 ${hours}시 ${minutes}분`;
+            timeDisplay.style.display = "inline-block";
+            if (footerBox) footerBox.innerText = "📢 물빛나루쉼터 남강호 매표소";
+        } else if (mode === 'guest_v') {
+            innerBox.className = "emergency-popup-box popup-staff-theme";
+            mainTitle.innerText = "📢 [근무자 전파] 긴급 지시사항";
+            timeDisplay.innerText = `${year}년 ${month}월 ${date}일 ${hours}시${minutes}분`;
+            timeDisplay.style.display = "inline-block";
+            if (footerBox) footerBox.innerText = "📢 안전 수칙을 재점검하고 승객 안내에 만전을 기해 주시기 바랍니다.";
+        }
+
+        if (manualSwitchSetting === 'forced_on') {
+            msgBox.innerText = popupMsg;
+            overlay.classList.add('active');
+            return;
+        }
+
+        const popupMode = configData.popupMode || 'on';
+        if (popupMode !== 'on') {
+            overlay.classList.remove('active');
+            return;
+        }
+
+        const pH = configData.popupHour || "12";
+        const pM = configData.popupMinute || "00";
+        const durSecs = configData.popupDurationSeconds !== undefined ? configData.popupDurationSeconds : 20;
+
+        const targetDate = new Date();
+        targetDate.setHours(parseInt(pH), parseInt(pM), 0, 0);
+
+        if (Math.abs(now.getTime() - targetDate.getTime()) < 1000) {
+            const popupKey = `${now.toLocaleDateString()}-${pH}:${pM}`;
+            if (!playedEmergencyPopups[popupKey]) {
+                playedEmergencyPopups[popupKey] = true;
+                const expireTimestamp = (durSecs === 0) ? 9999999999999 : (now.getTime() + (durSecs * 1000));
+                configData.popupActiveUntil = expireTimestamp;
+                saveConfigData();
+            }
+        }
+
+        const currentActiveUntil = configData.popupActiveUntil || 0;
+        if (currentActiveUntil > 0 && now.getTime() < currentActiveUntil) {
+            msgBox.innerText = popupMsg;
+            overlay.classList.add('active');
+        } else {
+            overlay.classList.remove('active');
+        }
+    }
+
+    function checkMidnightReset() {
+        const today = new Date().toLocaleDateString();
+        const lastDate = configData.lastDate;
+        if (lastDate && lastDate !== today) {
+            boatData = JSON.parse(JSON.stringify(defaultBoatData)); 
+            configData.lastDate = today;
+            configData.popupActiveUntil = 0;
+            configData.popupManualSwitch = "forced_off";
+            saveBoatData();
+            saveConfigData();
+            playedAlarms = {}; playedBroadcasts = {}; playedEmergencyPopups = {};
+            stopAllAlarms(); stopAllTtsBroadcasts(); 
+        } else if (!lastDate) {
+            configData.lastDate = today;
+            saveConfigData();
+        }
+    }
+
+    // UI 동기화 렌더러
+    function updateUI() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const date = String(now.getDate()).padStart(2, '0');
+        
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayStr = dayNames[now.getDay()];
+        
+        const dateFormatted = `${year}.${month}.${date}(${dayStr})`;
+        const timeFormatted = now.toTimeString().split(' ')[0];
+
+        [1, 2, 3].forEach(id => {
+            const dEl = document.getElementById(`date-${id}`);
+            const cEl = document.getElementById(`clock-${id}`);
+            if (dEl) dEl.innerText = dateFormatted;
+            if (cEl) cEl.innerText = timeFormatted;
+
+            const noticeTextEl = document.getElementById(`notice-text-${id}`);
+            if (noticeTextEl) noticeTextEl.innerText = boatData[id].notice || "현재 정상 운항 중입니다.";
+
+            const gDur = document.getElementById(`g-dur-${id}`);
+            const gCourse = document.getElementById(`g-course-${id}`);
+            if (gDur) gDur.innerText = boatData[id].duration || "-";
+            if (gCourse) gCourse.innerText = boatData[id].course || "-";
+
+            if (!isGuest) {
+                const capIn = document.getElementById(`cap-direct-${id}`);
+                const durIn = document.getElementById(`dur-direct-${id}`);
+                const couIn = document.getElementById(`course-direct-${id}`);
+                const notIn = document.getElementById(`notice-direct-${id}`);
+
+                if (capIn && document.activeElement !== capIn) capIn.value = boatData[id].capacity || 0;
+                if (durIn && document.activeElement !== durIn) durIn.value = boatData[id].duration || 0;
+                if (couIn && document.activeElement !== couIn) couIn.value = boatData[id].course || "";
+                if (notIn && document.activeElement !== notIn) notIn.value = boatData[id].notice === "현재 정상 운항 중입니다." ? "" : boatData[id].notice;
+            }
+        });
+
+        [1, 2, 3].forEach(id => {
+            const times = boatData[id].times || [];
+            const tbody = document.getElementById(`table-${id}`);
+            const listContainer = document.getElementById(`list-${id}`);
+            
+            if (!tbody) return;
+
+            if (!isGuest && listContainer) {
+                let currentChecked = Array.from(document.querySelectorAll(`.chk-${id}:checked`)).map(c => c.value);
+                let listHtml = "";
+                times.forEach(t => {
+                    const isChecked = currentChecked.includes(t) ? "checked" : "";
+                    listHtml += `
+                        <label class="time-item">
+                            <span>${t}</span>
+                            <input type="checkbox" class="chk-${id}" value="${t}" ${isChecked} onchange="updateSelectBtnText(${id})">
+                        </label>
+                    `;
+                });
+                listContainer.innerHTML = listHtml;
+            }
+
+            checkTenMinutesAlarm(id, times);
+            checkTtsSpeechBroadcast(id, times);
+
+            let pageTimes = times;
+            const rotationMode = configData.rotationMode || "on";
+            const targetGuest = configData.rotationTargetGuest !== false;
+            const targetWorker = configData.rotationTargetWorker !== false;
+            const pageInterval = (configData.pageIntervalSeconds || 5) * 1000;
+
+            let isRotationActiveForThisMode = false;
+            if (rotationMode === "on") {
+                if (mode === 'guest_h' && targetGuest) isRotationActiveForThisMode = true;
+                if (mode === 'guest_v' && targetWorker) isRotationActiveForThisMode = true;
+            }
+
+            const totalCount = times.length;
+            const pageIndicator = document.getElementById(`page-indicator-${id}`);
+
+            if (isGuest && totalCount > 10) {
+                const totalPages = Math.ceil(totalCount / 10);
+                let pStat = guestPageStatus[id];
+
+                if (isRotationActiveForThisMode) {
+                    if (now.getTime() - pStat.lastRotationTime >= pageInterval) {
+                        pStat.currentPage = (pStat.currentPage % totalPages) + 1;
+                        pStat.lastRotationTime = now.getTime();
+                    }
+                } else {
+                    pStat.currentPage = 1;
+                }
+
+                const startIdx = (pStat.currentPage - 1) * 10;
+                pageTimes = times.slice(startIdx, startIdx + 10);
+
+                if (pageIndicator) {
+                    pageIndicator.innerText = `[${pStat.currentPage}/${totalPages} 페이지]`;
+                    pageIndicator.style.display = "inline-block";
+                }
+            } else {
+                if (pageIndicator) pageIndicator.style.display = "none";
+            }
+
+            let tbodyHtml = "";
+            pageTimes.forEach(t => {
+                const capacity = boatData[id].capacity || 0;
+                const booked = (boatData[id].seats && boatData[id].seats[t]) || 0;
+                const remain = capacity - booked;
+                const customStat = (boatData[id].customStatus && boatData[id].customStatus[t]) || "auto";
+
+                const [tH, tM] = t.split(':').map(Number);
+                const flightTime = new Date(); flightTime.setHours(tH, tM, 0, 0);
+                const diffMins = (flightTime.getTime() - now.getTime()) / 60000;
+
+                let rowClass = "";
+                let statusText = "";
+                let statusClass = "";
+                let remainText = remain;
+                let remainClass = "remain-count";
+
+                if (customStat !== "auto") {
+                    statusText = customStat;
+                    if (customStat === "운항없음") {
+                        rowClass = "row-halted-gray-bg";
+                        statusClass = "text-ended-box";
+                    } else if (customStat.includes("중지")) {
+                        rowClass = "row-halted-gray-bg";
+                        statusClass = "text-ended-box";
+                    } else if (customStat === "점 검 중") {
+                        rowClass = "row-halted-gray-bg";
+                        statusClass = "text-maintenance-gray";
+                    } else if (customStat === "탑승시작") {
+                        rowClass = "row-boarding-start-bg";
+                        statusClass = "text-boarding-start";
+                    } else if (customStat === "티켓발권마감") {
+                        rowClass = "row-ticketing-ended-bg";
+                        statusClass = "bg-dark-green-yellow";
+                    } else if (customStat === "탑승(승선)마감") {
+                        rowClass = "row-boarding-close-solid";
+                        statusClass = "text-boarding-close";
+                    }
+                } else {
+                    if (diffMins < -30) {
+                        statusText = "운항종료";
+                        rowClass = "row-ended";
+                        statusClass = "text-ended-box";
+                    } else if (diffMins <= 0) {
+                        statusText = "운 항 중";
+                        rowClass = "row-sailing-bg";
+                        statusClass = "text-blue";
+                    } else if (diffMins <= 5) {
+                        statusText = "탑승마감";
+                        rowClass = "row-boarding-close-solid";
+                        statusClass = "text-boarding-close";
+                    } else if (diffMins <= 10) {
+                        statusText = "탑승시작";
+                        rowClass = "row-boarding-start-bg";
+                        statusClass = "text-boarding-start";
+                    } else if (diffMins <= 15) {
+                        statusText = "티켓발권종료";
+                        rowClass = "row-ticketing-ended-bg";
+                        statusClass = "bg-dark-green-yellow";
+                    } else {
+                        if (remain <= 0) {
+                            statusText = "매 진";
+                            rowClass = "row-soldout-blink";
+                            statusClass = "text-soldout";
+                            remainClass += " text-soldout-zero";
+                        } else {
+                            statusText = "티켓발권가능";
+                            rowClass = "row-available-bg";
+                            statusClass = "text-available";
+                        }
+                    }
+                }
+
+                if (remain <= 0 && customStat === "auto" && !statusText.includes("종료") && statusText !== "운 항 중") {
+                    rowClass = "row-soldout-blink";
+                    remainClass += " text-soldout-zero";
+                }
+
+                const isAlarmActive = activeVisualAlarms[id].includes(t);
+                const isTtsActive = activeTtsBroadcasts[id].includes(t);
+
+                if (isAlarmActive) rowClass += " row-alarm-blink";
+                if (isTtsActive) rowClass += " row-tts-blink";
+
+                let controlBtns = "";
+                if (!isGuest) {
+                    let alarmStopBtn = "";
+                    if (isAlarmActive) {
+                        alarmStopBtn = `<button class="btn-alarm-stop" onclick="dismissAlarm(${id}, '${t}')">🔔 알람확인</button>`;
+                    }
+                    let ttsStopBtn = "";
+                    if (isTtsActive) {
+                        ttsStopBtn = `<button class="btn-tts-stop" onclick="dismissTtsBroadcast(${id}, '${t}')">🗣️ 방송확인</button>`;
+                    }
+
+                    controlBtns = `
+                        <div class="btn-group">
+                            <button class="btn-adj" onclick="adjust(${id}, '${t}', 1)">+</button>
+                            <button class="btn-adj" onclick="adjust(${id}, '${t}', -1)">-</button>
+                        </div>
+                        ${alarmStopBtn}
+                        ${ttsStopBtn}
+                    `;
+                }
+
+                const isHaltedCell = rowClass.includes("row-halted-gray-bg") || rowClass.includes("row-ended");
+                const lineThroughClass = isHaltedCell ? "line-through-cell" : "";
+
+                tbodyHtml += `
+                    <tr class="${rowClass}">
+                        <td class="${lineThroughClass}"><span>${t}</span></td>
+                        <td class="${lineThroughClass}">
+                            <div class="total-booked-flex">
+                                <div>${capacity}명<span class="slash-divider">/</span>${booked}명</div>
+                                ${controlBtns}
+                            </div>
+                        </td>
+                        <td class="${lineThroughClass}">
+                            <span class="${remainClass}">${remainText}</span>명
+                        </td>
+                        <td>
+                            <div class="status-cell-flex">
+                                <span class="status-text ${statusClass}">${statusText}</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = tbodyHtml;
+        });
+
+        checkEmergencyPopupSchedule();
+    }
+
+    // Firebase 리스너 수신부
+    const boatDataRef = ref(db, 'namgang/boatData');
+    onValue(boatDataRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+            boatData = val;
+            [1, 2, 3].forEach(id => {
+                if (!boatData[id]) boatData[id] = JSON.parse(JSON.stringify(defaultBoatData[id]));
+                if (!boatData[id].seats) boatData[id].seats = {};
+                if (!boatData[id].customStatus) boatData[id].customStatus = {};
+            });
+            updateUI();
+        } else {
+            saveBoatData();
+        }
+    });
+
+    const configDataRef = ref(db, 'namgang/configData');
+    onValue(configDataRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+            configData = val;
+            
+            if (!isGuest) {
+                if (document.getElementById('alarm-trigger-minutes')) document.getElementById('alarm-trigger-minutes').value = configData.alarmMinutes || 10;
+                if (document.getElementById('alarm-duration-seconds')) document.getElementById('alarm-duration-seconds').value = configData.alarmSeconds || 30;
+                if (document.getElementById('page-interval-seconds')) document.getElementById('page-interval-seconds').value = configData.pageIntervalSeconds || 5;
+
+                const ttsRadio = document.querySelector(`input[name="tts_broadcast"][value="${configData.ttsBroadcast || 'on'}"]`);
+                if (ttsRadio) ttsRadio.checked = true;
+
+                if (document.getElementById('tts-trigger-minutes')) document.getElementById('tts-trigger-minutes').value = configData.ttsMinutes || 5;
+                if (document.getElementById('tts-repeat-count')) document.getElementById('tts-repeat-count').value = configData.ttsRepeatCount || 2;
+
+                const rotRadio = document.querySelector(`input[name="rotation_mode"][value="${configData.rotationMode || 'on'}"]`);
+                if (rotRadio) rotRadio.checked = true;
+
+                if (document.getElementById('rotation-target-guest')) document.getElementById('rotation-target-guest').checked = configData.rotationTargetGuest !== false;
+                if (document.getElementById('rotation-target-worker')) document.getElementById('rotation-target-worker').checked = configData.rotationTargetWorker !== false;
+
+                const popRadio = document.querySelector(`input[name="popup_mode"][value="${configData.popupMode || 'on'}"]`);
+                if (popRadio) popRadio.checked = true;
+
+                const manualRadio = document.querySelector(`input[name="popup_manual_switch"][value="${configData.popupManualSwitch || 'forced_off'}"]`);
+                if (manualRadio) manualRadio.checked = true;
+
+                if (document.getElementById('popup-hour')) document.getElementById('popup-hour').value = configData.popupHour || "12";
+                if (document.getElementById('popup-minute')) document.getElementById('popup-minute').value = configData.popupMinute || "00";
+                if (document.getElementById('popup-duration-seconds')) document.getElementById('popup-duration-seconds').value = configData.popupDurationSeconds !== undefined ? configData.popupDurationSeconds : 20;
+                if (document.getElementById('popup-message-text')) document.getElementById('popup-message-text').value = configData.popupMessageText || "";
+            }
+
+            checkMidnightReset();
+            updateUI();
+        } else {
+            saveConfigData();
+        }
+    });
+
+    // 드롭다운 외곽 클릭 닫기
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-multiselect')) {
+            document.querySelectorAll('.checkbox-list').forEach(el => el.classList.remove('show'));
+        }
+    });
+
+    // 1초 주기의 UI/시계 갱신 루프
+    setInterval(() => {
+        updateUI();
+    }, 1000);
+
+</script>
+</body>
+</html>
