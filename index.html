@@ -3,39 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>남강호 실시간 잔여석 관리 프로그램 (Firebase 실시간 연동)</title>
+    <title>남강 유람선 실시간 잔여석 관리 프로그램 (Firebase 실시간 연동)</title>
     
+    <!-- PWA 적용: 웹 앱 Manifest 및 메타 태그 연결 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121418">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <style>
         /* ==========================================================================
            [CSS] 테마 스타일 및 전역 색상 변수 설정 (:root)
            ========================================================================== */
         :root {
-            --primary-dark: #002d5a;        /* 일괄 변경 버튼 등 주요 어두운 파란색 */
-            --boat3-color: #28a745;         /* 남강 3호 타이틀 배경 (초록) */
-            --boat4-color: #2c7be5;         /* 남강 4호 타이틀 배경 (파란) */
-            --boat5-color: #e67e22;         /* 남강 5호 타이틀 배경 (주황) */
-            --bg-color: #121418;            /* 전체 화면 바탕색 (어두운 회색) */
-            --card-bg: #ffffff;             /* 각 선박 섹션의 배경색 (흰색) */
-            --success: #0040ff;             /* 티켓발권 가능 인원 글자색 (파란) */
-            --danger: #e60000;              /* 매진 및 경고 색상 (빨간) */
+            --primary-dark: #002d5a;        /* 일괄 변경 버튼 등 주요 어두운 파란색[cite: 1] */
+            --boat3-color: #28a745;         /* 남강 3호 타이틀 배경 (초록)[cite: 1] */
+            --boat4-color: #2c7be5;         /* 남강 4호 타이틀 배경 (파란)[cite: 1] */
+            --boat5-color: #6f42c1;         /* 남강 5호 타이틀 배경 (보라) */
+            --bg-color: #121418;            /* 전체 화면 바탕색 (어두운 회색)[cite: 1] */
+            --card-bg: #ffffff;             /* 각 선박 섹션의 배경색 (흰색)[cite: 1] */
+            --success: #0040ff;             /* 티켓발권 가능 인원 글자색 (파란)[cite: 1] */
+            --danger: #e60000;              /* 매진 및 경고 색상 (빨간)[cite: 1] */
             
-            --ended-gray: #f0f0f0;          /* 운항 종료 및 중지 행의 배경색 (연회색) */
-            --ended-text-color: #999999;    /* 운항 종료 및 중지 행의 글자색 (흐린 회색) */
-            --dark-green: #006400;          /* 티켓발권종료 박스 배경색 (진녹색) */
-            --yellow-btn: #fbc02d;          /* 설정 변경 버튼 배경색 (노란) */
-            --yellow-btn-border: #f9a825;   /* 설정 변경 버튼 테두리색 */
+            --ended-gray: #f0f0f0;          /* 운항 종료 및 중지 행의 배경색 (연회색)[cite: 1] */
+            --ended-text-color: #999999;    /* 운항 종료 및 중지 행의 글자색 (흐린 회색)[cite: 1] */
+            --dark-green: #006400;          /* 티켓발권종료 박스 배경색 (진녹색)[cite: 1] */
+            --yellow-btn: #fbc02d;          /* 설정 변경 버튼 배경색 (노란)[cite: 1] */
+            --yellow-btn-border: #f9a825;   /* 설정 변경 버튼 테두리색[cite: 1] */
             
-            --available-bg: #e3f2fd;        /* 예약 가능 행의 은은한 배경색 (연파란) */
-            --sailing-bg: #fff9c4;          /* 운항 중 행의 은은한 배경색 (연노란) */
-            --ticketing-ended-bg: #e8f5e9;  /* 발권 종료 행의 은은한 배경색 (연초록) */
-            --boarding-start-bg: #fff3e0;   /* 탑승시작 행의 은은한 배경색 (연오렌지) */
-            --boarding-close-bg: #fffde7;   /* 탑승마감 행의 은은한 배경색 (연한 노란빛) */
-            --soldout-blink-bg: #ffebee;    /* 매진 행의 원래 은은한 배경색 (연분홍) */
+            --available-bg: #e3f2fd;        /* 예약 가능 행의 은은한 배경색 (연파란)[cite: 1] */
+            --sailing-bg: #fff9c4;          /* 운항 중 행의 은은한 배경색 (연노란)[cite: 1] */
+            --ticketing-ended-bg: #e8f5e9;  /* 발권 종료 행의 은은한 배경색 (연초록)[cite: 1] */
+            --boarding-start-bg: #fff3e0;   /* 탑승시작 행의 은은한 배경색 (연오렌지)[cite: 1] */
+            --boarding-close-bg: #fffde7;   /* 탑승마감 행의 은은한 배경색 (연한 노란빛)[cite: 1] */
+            --soldout-blink-bg: #ffebee;    /* 매진 행의 원래 은은한 배경색 (연분홍)[cite: 1] */
             
-            --highlight: #00ffcc;           /* 최상단 바 버튼 강조색 (민트) */
-            --tts-highlight: #ff9f43;       /* 안내방송 설정 강조색 (오렌지) */
-            --rotation-highlight: #00ecff;  /* 화면전환기 설정 강조색 (하늘색) */
-            --popup-highlight: #ff4d4d;     /* 긴급 팝업 설정 강조색 (밝은 빨간색) */
+            --highlight: #00ffcc;           /* 최상단 바 버튼 강조색 (민트)[cite: 1] */
+            --tts-highlight: #ff9f43;       /* 안내방송 설정 강조색 (오렌지)[cite: 1] */
+            --rotation-highlight: #00ecff;  /* 화면전환기 설정 강조색 (하늘색)[cite: 1] */
+            --popup-highlight: #ff4d4d;     /* 긴급 팝업 설정 강조색 (밝은 빨간색)[cite: 1] */
         }
 
         body {
@@ -130,78 +136,88 @@
         .boat-header { 
             padding: 10px 15px; color: white; 
             display: flex; align-items: center; justify-content: space-between; 
-            position: relative; min-height: 100px; flex-wrap: nowrap;
+            position: relative; min-height: 120px; flex-wrap: nowrap;
         }
-        .boat-title-area { display: flex; align-items: center; gap: 10px; }
-        .boat-title { font-size: 52px; font-weight: 900; letter-spacing: -2px; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); white-space: nowrap; }
+        .boat-title-area { display: flex; align-items: center; gap: 20px; }
+        .boat-title { font-size: clamp(30px, 5vw, 68px); font-weight: 900; letter-spacing: -2px; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
 
         .page-badge {
             display: none; position: absolute; right: 20px; bottom: 20px;
             background: rgba(0, 0, 0, 0.85); color: #ffffff; padding: 6px 18px;
-            font-size: 22px; font-weight: bold; border-radius: 30px; border: 2px solid #fff;
+            font-size: 26px; font-weight: bold; border-radius: 30px; border: 2px solid #fff;
             box-shadow: 0 4px 12px rgba(0,0,0,0.6); z-index: 9999;
         }
-        .is-guest .page-badge { display: inline-block; }
+        .mode-h.is-guest .page-badge { display: inline-block; }
 
         .boat3-title { background-color: var(--boat3-color); } 
         .boat4-title { background-color: var(--boat4-color); } 
         .boat5-title { background-color: var(--boat5-color); } 
 
         .boat-info-right { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
-        .boat-date { font-size: 26px; font-weight: 700; color: rgba(255,255,255,1); line-height: 1.1; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .boat-clock { font-size: 32px; font-weight: 900; font-family: 'monospace'; line-height: 1.1; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+        .boat-date { font-size: clamp(18px, 2.5vw, 34px); font-weight: 700; color: rgba(255,255,255,1); line-height: 1.1; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .boat-clock { font-size: clamp(22px, 3.5vw, 42px); font-weight: 900; font-family: 'monospace'; line-height: 1.1; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
 
-        .setting-area { background: #f8f9fa; padding: 10px; border-bottom: 1px solid #ddd; display: flex; flex-direction: column; gap: 6px; }
-        .setting-area .setting-row { display: flex; gap: 6px; align-items: center; }
-        .setting-row input[type="text"], .setting-row input[type="number"] { padding: 0 6px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; height: 40px; box-sizing: border-box; }
+        .setting-area { background: #f8f9fa; padding: 12px; border-bottom: 1px solid #ddd; display: flex; flex-direction: column; gap: 8px; }
+        .setting-area .setting-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .setting-row input[type="text"], .setting-row input[type="number"] { padding: 0 10px; font-size: 20px; border: 1px solid #ccc; border-radius: 6px; height: 50px; box-sizing: border-box; }
         
         .btn-apply-unified {
-            height: 40px; width: 90px; font-size: 15px !important; cursor: pointer; font-weight: bold; border-radius: 6px;
+            height: 50px; width: 120px; font-size: 20px !important; cursor: pointer; font-weight: bold; border-radius: 6px;
             background-color: var(--yellow-btn) !important; color: #000 !important; border: 1px solid var(--yellow-btn-border) !important;
             display: flex; align-items: center; justify-content: center; white-space: nowrap;
         }
         .btn-action-unified {
-            height: 40px; width: 110px; font-size: 15px !important; cursor: pointer; font-weight: bold; border-radius: 6px;
+            height: 50px; width: 150px; font-size: 20px !important; cursor: pointer; font-weight: bold; border-radius: 6px;
             display: flex; align-items: center; justify-content: center; white-space: nowrap;
         }
         .btn-wizard { background-color: #e1f5fe !important; color: #01579b; border: 1px solid #b3e5fc !important; }
         .btn-section-reset { background-color: #fff0f0 !important; color: #d63031; border: 1px solid #ccc; }
         .btn-notice-delete { background-color: #ff4d4d !important; color: #fff !important; border: 1px solid #ff3333 !important; }
 
-        .cap-container { display: flex; align-items: center; gap: 3px; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 0 6px; flex: 1; height: 40px; box-sizing: border-box;}
-        .course-container { flex: 1.5 !important; }
-        .cap-label { font-size: 14px; font-weight: bold; color: #333; white-space: nowrap; }
-        .cap-edit-input { width: 100% !important; border: none !important; text-align: center; font-size: 16px; font-weight: bold; outline: none; background: transparent; }
-        .notice-edit-input { width: 100% !important; border: none !important; text-align: left; font-size: 14px; font-weight: bold; outline: none; background: transparent; resize: none; height: 36px; padding: 6px 0 0 6px; box-sizing: border-box; font-family: inherit; }
+        .cap-container { display: flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 0 10px; flex: 1.2; height: 50px; box-sizing: border-box;}
+        .course-container { flex: 2 !important; }
+        .cap-label { font-size: 18px; font-weight: bold; color: #333; white-space: nowrap; }
+        .cap-edit-input { width: 100% !important; border: none !important; text-align: center; font-size: 20px; font-weight: bold; outline: none; background: transparent; }
+        .notice-edit-input { width: 100% !important; border: none !important; text-align: left; font-size: 18px; font-weight: bold; outline: none; background: transparent; resize: none; height: 44px; padding: 10px 0 0 10px; box-sizing: border-box; font-family: inherit; }
 
         .guest-info-banner { 
-            display: none; background: #f0f7ff; padding: 8px; border-bottom: 2px solid #2c7be5;
-            justify-content: space-around; align-items: center; font-size: 20px; font-weight: 900;
+            display: none; background: #f0f7ff; padding: 10px; border-bottom: 2px solid #2c7be5;
+            justify-content: space-around; align-items: center; font-size: 28px; font-weight: 900;
         }
         .is-guest .guest-info-banner { display: flex; }
         .info-item { color: #002d5a; }
         .info-val { color: #e60000; margin-left: 5px; }
 
         .notice-view-container {
-            display: none; background: #fffdeb; padding: 10px 15px; border-bottom: 3px dashed #f9a825;
-            min-height: 70px; box-sizing: border-box; flex-direction: column; justify-content: center;
+            display: none; background: #fffdeb; padding: 15px 20px; border-bottom: 3px dashed #f9a825;
+            min-height: 90px; box-sizing: border-box; flex-direction: column; justify-content: center;
         }
         .mode-v .notice-view-container { display: flex; }
-        .notice-title { font-size: 18px; font-weight: 800; color: #d63031; margin-bottom: 2px; display: flex; align-items: center; gap: 5px; }
-        .notice-content { font-size: 22px; font-weight: 900; color: #2d3436; line-height: 1.3; white-space: normal; word-break: break-all; }
+        .notice-title { font-size: 22px; font-weight: 800; color: #d63031; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+        .notice-content { font-size: clamp(18px, 3vw, 26px); font-weight: 900; color: #2d3436; line-height: 1.3; white-space: normal; word-break: break-all; }
 
         .table-wrapper { flex: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; table-layout: auto; } 
-        th { background: #eee; padding: 8px 2px; border-bottom: 3px solid #ddd; position: sticky; top: 0; z-index: 10; font-size: 22px; font-weight: 900; white-space: nowrap; }
+        th { background: #eee; padding: 10px 4px; border-bottom: 3px solid #ddd; position: sticky; top: 0; z-index: 10; font-size: clamp(16px, 2.2vw, 26px); font-weight: 900; white-space: nowrap; }
         
-        td { padding: 6px 2px; text-align: center; border-bottom: 1px solid #eee; font-weight: 900; font-size: 26px; letter-spacing: -1px; position: relative; line-height: 1.2; white-space: nowrap; }
-        td:first-child { font-size: 28px; font-weight: 900; letter-spacing: -1px; }
+        td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #eee; font-weight: 900; font-size: clamp(18px, 2.5vw, 32px); letter-spacing: -1.5px; position: relative; line-height: 1.2; white-space: nowrap; }
+        td:first-child { font-size: clamp(20px, 2.8vw, 35px); font-weight: 900; letter-spacing: -1px; }
 
-        .total-booked-flex { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .total-booked-flex { display: flex; align-items: center; justify-content: center; gap: 6px; }
 
-        .remain-count { font-size: 32px; font-weight: 900; color: #0040ff; }
-        .text-soldout-zero { color: var(--danger) !important; font-size: 34px; }
-        .slash-divider { margin: 0 4px; font-weight: 700; color: #444; font-size: 26px; }
+        .remain-count { font-size: clamp(20px, 3vw, 38px); font-weight: 900; color: #0040ff; }
+        .text-soldout-zero { color: var(--danger) !important; font-size: clamp(22px, 3.5vw, 40px); }
+        .slash-divider { margin: 0 4px; font-weight: 700; color: #444; font-size: clamp(18px, 2.5vw, 32px); }
+
+        .over-capacity-text {
+            color: #ff0000 !important;
+            background-color: #ffe6e6;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 2px dashed #ff0000;
+            display: inline-block;
+            font-size: clamp(16px, 2.2vw, 28px);
+        }
 
         .row-available-bg td { background-color: var(--available-bg); }
         .row-sailing-bg td { background-color: var(--sailing-bg); }
@@ -228,18 +244,20 @@
         .row-ended td { background-color: var(--ended-gray) !important; color: var(--ended-text-color) !important; }
         .row-ended .remain-count { color: var(--ended-text-color) !important; }
 
-        .status-cell-flex { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .status-cell-flex { display: flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-group { display: flex; gap: 2px; }
+        
         .btn-adj { 
-            width: 32px; height: 32px; border: 1px solid #bbb; background: #ffffff; 
-            font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 6px; 
+            min-width: 40px; min-height: 40px; width: 40px; height: 40px; border: 2px solid #bbb; background: #ffffff; 
+            font-size: 22px; font-weight: bold; cursor: pointer; border-radius: 6px; 
             display: flex; align-items: center; justify-content: center; color: #333 !important;
+            touch-action: manipulation;
         }
 
         .status-text { 
-            font-size: 24px; font-weight: 900; position: relative; z-index: 10; 
+            font-size: clamp(16px, 2.5vw, 30px); font-weight: 900; position: relative; z-index: 10; 
             display: inline-block; line-height: 1.1; white-space: nowrap; 
-            padding: 4px 10px; border-radius: 8px; min-width: 100px; text-align: center;
+            padding: 4px 10px; border-radius: 8px; min-width: 110px; text-align: center;
             text-decoration: none !important; 
         }
         
@@ -255,30 +273,30 @@
 
         .btn-alarm-stop {
             background-color: #ffffff !important; color: #ff1251 !important; border: 2px solid #000000 !important; 
-            padding: 2px 8px; font-size: 18px !important; font-weight: 900; border-radius: 6px; cursor: pointer; 
-            animation: textBlinker 0.8s linear infinite; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            padding: 4px 8px; font-size: 22px !important; font-weight: 900; border-radius: 6px; cursor: pointer; 
+            animation: textBlinker 0.8s linear infinite; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .btn-tts-stop {
             background-color: #ffffff !important; color: #ff8400 !important; border: 2px solid #000000 !important; 
-            padding: 2px 8px; font-size: 18px !important; font-weight: 900; border-radius: 6px; cursor: pointer; 
-            animation: textBlinker 1.2s linear infinite; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            padding: 4px 8px; font-size: 22px !important; font-weight: 900; border-radius: 6px; cursor: pointer; 
+            animation: textBlinker 1.2s linear infinite; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        .admin-panel { background: #eee; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
-        .control-row-single { display: flex; gap: 6px; align-items: center; }
+        .admin-panel { background: #eee; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+        .control-row-single { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         
-        .custom-multiselect { position: relative; flex: 1; height: 42px; }
-        .select-btn { width: 100%; height: 100%; padding: 0 6px; font-size: 16px; font-weight: bold; background: white; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left; }
+        .custom-multiselect { position: relative; flex: 1; height: 48px; min-width: 120px; }
+        .select-btn { width: 100%; height: 100%; padding: 0 8px; font-size: 18px; font-weight: bold; background: white; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left; touch-action: manipulation; }
         .checkbox-list { 
-            display: none; position: absolute; bottom: 44px; left: 0; right: 0;
+            display: none; position: absolute; bottom: 50px; left: 0; right: 0;
             background: white; border: 1px solid #ccc; border-radius: 6px; 
-            max-height: 300px; overflow-y: auto; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+            max-height: 350px; overflow-y: auto; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
         }
         .checkbox-list.show { display: block; }
-        .time-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; font-size: 16px; font-weight: bold; border-bottom: 1px solid #eee; cursor: pointer; }
+        .time-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; font-size: 20px; font-weight: bold; border-bottom: 1px solid #eee; cursor: pointer; }
 
-        .admin-panel input, .admin-panel select, .btn-update { flex: 1; min-width: 0; height: 42px; text-align: center; font-size: 16px; font-weight: bold; border-radius: 6px; border: 1px solid #ccc; }
-        .btn-update { background: var(--primary-dark); color: white; cursor: pointer; border: none; } 
+        .admin-panel input, .admin-panel select, .btn-update { flex: 1; min-width: 100px; height: 48px; text-align: center; font-size: 18px; font-weight: bold; border-radius: 6px; border: 1px solid #ccc; }
+        .btn-update { background: var(--primary-dark); color: white; cursor: pointer; border: none; touch-action: manipulation; } 
 
         .is-guest #right-sidebar,
         .is-guest .admin-panel, 
@@ -349,28 +367,67 @@
 
         body:not(.is-guest) tr.row-alarm-blink { box-shadow: 0 0 25px 8px #ff1251 !important; position: relative; z-index: 50; }
         body:not(.is-guest) tr.row-alarm-blink td { animation: alarmStrongBlinker 0.5s ease-in-out infinite; font-weight: 900 !important; border-top: 3px solid #000 !important; border-bottom: 3px solid #000 !important; }
-        body:not(.is-guest) tr.row-alarm-blink td:first-child span { font-size: 32px !important; text-shadow: 2px 2px 0px #000; }
+        body:not(.is-guest) tr.row-alarm-blink td:first-child span { font-size: 50px !important; text-shadow: 2px 2px 0px #000; }
         body:not(.is-guest) tr.row-alarm-blink td span, body:not(.is-guest) tr.row-alarm-blink td div { color: inherit !important; }
 
         body:not(.is-guest) tr.row-tts-blink { box-shadow: 0 0 25px 8px #ff8400 !important; position: relative; z-index: 49; }
         body:not(.is-guest) tr.row-tts-blink td { animation: ttsActiveBlinker 0.6s ease-in-out infinite; font-weight: 900 !important; border-top: 3px solid #000 !important; border-bottom: 3px solid #000 !important; }
-        body:not(.is-guest) tr.row-tts-blink td:first-child span { font-size: 32px !important; text-shadow: 2px 2px 0px #000; }
+        body:not(.is-guest) tr.row-tts-blink td:first-child span { font-size: 50px !important; text-shadow: 2px 2px 0px #000; }
         body:not(.is-guest) tr.row-tts-blink td span, body:not(.is-guest) tr.row-tts-blink td div { color: inherit !important; }
 
-        .is-guest tr td { font-size: 28px !important; }
-        .is-guest tr td:first-child { font-size: 32px !important; }
-        .is-guest .status-cell-flex { font-size: 30px !important; font-weight: 900 !important; }
-        .is-guest .status-text { font-size: 32px !important; display: inline-block; }
-        .is-guest .remain-count { font-size: 38px !important; }
-        .is-guest .row-ended .remain-count, .is-guest .row-sailing-bg .remain-count { font-size: 40px; }
-        .is-guest .remain-count.shrunk-size { font-size: 38px !important; }
+        .is-guest tr td { font-size: clamp(18px, 2.5vw, 32px) !important; }
+        .is-guest tr td:first-child { font-size: clamp(20px, 3vw, 38px) !important; }
+        .is-guest .status-cell-flex { font-size: clamp(18px, 2.8vw, 35px) !important; font-weight: 900 !important; }
+        .is-guest .status-text { font-size: clamp(20px, 3.2vw, 40px) !important; display: inline-block; }
+        .is-guest .remain-count { font-size: clamp(22px, 3.8vw, 45px) !important; }
+        .is-guest .row-ended .remain-count, .is-guest .row-sailing-bg .remain-count { font-size: clamp(24px, 4.2vw, 50px); }
+        .is-guest .remain-count.shrunk-size { font-size: clamp(22px, 3.8vw, 45px) !important; }
 
         .force-gray-color, .force-gray-color span, .force-gray-color div { color: var(--ended-text-color) !important; }
+
+        @media (max-width: 1200px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow-y: auto;
+            }
+            .main-container {
+                flex-direction: column !important;
+            }
+            #right-sidebar {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 10px;
+            }
+            .boat-section {
+                min-height: 500px;
+            }
+        }
+
+        #offline-banner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #d63031;
+            color: #ffffff;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 900;
+            padding: 12px;
+            z-index: 9999999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        #offline-banner.active {
+            display: block;
+        }
     </style>
 </head>
 <body id="main-body">
 
-    <!-- 🚨 최상위 오버레이 레이어: 긴급 팝업창 모달 -->
+    <div id="offline-banner">⚠️ 네트워크 연결 끊김 - 재연결 시도 중...</div>
+
     <div id="emergency-overlay" class="emergency-fullscreen-overlay">
         <div id="emergency-popup-inner-box" class="emergency-popup-box">
             <div id="emergency-popup-title-area" class="emergency-popup-header">
@@ -382,13 +439,12 @@
         </div>
     </div>
 
-    <!-- 메인 대시보드 레이아웃 -->
     <div class="main-container">
-        <!-- 남강 3호 (기존 김시민 1호) -->
+        <!-- 남강 3호 -->
         <div class="boat-section" id="section-1">
             <div class="boat-header boat3-title">
                 <div class="boat-title-area">
-                    <div class="boat-title">남강 3호</div>
+                    <div class="boat-title">&nbsp;&nbsp;&nbsp;남강 3호</div>
                 </div>
                 <div class="boat-info-right">
                     <div class="boat-date" id="date-1"></div>
@@ -428,8 +484,8 @@
                     <button class="btn-apply-unified" onclick="applyExtraInfo(1)">변경 적용</button>
                     <button class="btn-action-unified btn-section-reset" onclick="resetBoat(1)">데이터 리셋</button>
                 </div>
-                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 6px;">
-                    <div class="cap-container" style="flex: 1; height: 40px;">
+                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 8px;">
+                    <div class="cap-container" style="flex: 1; height: 50px;">
                         <span class="cap-label" style="color: #d63031;">📢 3호 공지 :</span>
                         <textarea id="notice-direct-1" class="notice-edit-input" placeholder="실시간 공지사항 입력"></textarea>
                     </div>
@@ -478,11 +534,11 @@
             <span id="page-indicator-1" class="page-badge">[-]</span>
         </div>
 
-        <!-- 남강 4호 (기존 김시민 2호) -->
+        <!-- 남강 4호 -->
         <div class="boat-section" id="section-2">
             <div class="boat-header boat4-title">
                 <div class="boat-title-area">
-                    <div class="boat-title">남강 4호</div>
+                    <div class="boat-title">&nbsp;&nbsp;&nbsp;남강 4호</div>
                 </div>
                 <div class="boat-info-right">
                     <div class="boat-date" id="date-2"></div>
@@ -522,8 +578,8 @@
                     <button class="btn-apply-unified" onclick="applyExtraInfo(2)">변경 적용</button>
                     <button class="btn-action-unified btn-section-reset" onclick="resetBoat(2)">데이터 리셋</button>
                 </div>
-                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 6px;">
-                    <div class="cap-container" style="flex: 1; height: 40px;">
+                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 8px;">
+                    <div class="cap-container" style="flex: 1; height: 50px;">
                         <span class="cap-label" style="color: #d63031;">📢 4호 공지 :</span>
                         <textarea id="notice-direct-2" class="notice-edit-input" placeholder="실시간 공지사항 입력"></textarea>
                     </div>
@@ -572,11 +628,11 @@
             <span id="page-indicator-2" class="page-badge">[-]</span>
         </div>
 
-        <!-- 남강 5호 (추가) -->
+        <!-- 남강 5호 -->
         <div class="boat-section" id="section-3">
             <div class="boat-header boat5-title">
                 <div class="boat-title-area">
-                    <div class="boat-title">남강 5호</div>
+                    <div class="boat-title">&nbsp;&nbsp;&nbsp;남강 5호</div>
                 </div>
                 <div class="boat-info-right">
                     <div class="boat-date" id="date-3"></div>
@@ -616,8 +672,8 @@
                     <button class="btn-apply-unified" onclick="applyExtraInfo(3)">변경 적용</button>
                     <button class="btn-action-unified btn-section-reset" onclick="resetBoat(3)">데이터 리셋</button>
                 </div>
-                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 6px;">
-                    <div class="cap-container" style="flex: 1; height: 40px;">
+                <div class="setting-row" style="border-top: 1px dashed #ccc; padding-top: 8px;">
+                    <div class="cap-container" style="flex: 1; height: 50px;">
                         <span class="cap-label" style="color: #d63031;">📢 5호 공지 :</span>
                         <textarea id="notice-direct-3" class="notice-edit-input" placeholder="실시간 공지사항 입력"></textarea>
                     </div>
@@ -677,7 +733,6 @@
             <button class="btn-open-guest btn-reset-all" onclick="confirmResetAll()">⚠️ 전체 데이터 초기화</button>
         </div>
 
-        <!-- 🔔 모듈 1: 알람 -->
         <div class="alarm-toggle-container">
             <div class="alarm-radio-row">
                 <label><input type="radio" name="alarm_sound" value="on" checked onchange="handleAlarmToggle()"> 🔊 알람 ON</label>
@@ -699,7 +754,6 @@
             </div>
         </div>
 
-        <!-- 📢 모듈 2: TTS 방송 -->
         <div class="alarm-toggle-container" style="border-color: var(--tts-highlight);">
             <div class="alarm-radio-row">
                 <label><input type="radio" name="tts_broadcast" class="tts-accent" value="on" checked onchange="handleTtsToggle()"> 📢 방송 ON</label>
@@ -721,7 +775,6 @@
             </div>
         </div>
 
-        <!-- 📺 모듈 3: 화면전환기 -->
         <div class="alarm-toggle-container" style="border-color: var(--rotation-highlight);">
             <div class="box-title-sm" style="color: var(--rotation-highlight);">📺 자동 화면전환기 설정</div>
             <div class="alarm-radio-row">
@@ -749,7 +802,6 @@
             </div>
         </div>
 
-        <!-- 🚨 모듈 4: 긴급 팝업 -->
         <div class="alarm-toggle-container" style="border-color: var(--popup-highlight);">
             <div class="box-title-sm" style="color: var(--popup-highlight);">🚨 긴급 전체화면 공지 팝업 설정</div>
             
@@ -795,28 +847,41 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // ⚠️ 아래 firebaseConfig 객체의 값을 본인의 Firebase 프로젝트 설정값으로 변경하세요.
     const firebaseConfig = {
-  apiKey: "AIzaSyATYmw5W8E9KniqYfbBrA2Z4pzfE4DWZ9M",
-  authDomain: "namkang930.firebaseapp.com",
-  databaseURL: "https://namkang930-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "namkang930",
-  storageBucket: "namkang930.firebasestorage.app",
-  messagingSenderId: "180094165319",
-  appId: "1:180094165319:web:1c07b0cc7865be363a6c62"
-};
-    // Firebase 초기화
+        apiKey: "AIzaSyASAWsxM_6x5iFFme8wqePiFzNytsNOF5E",
+        authDomain: "mulbitnaru930.firebaseapp.com",
+        databaseURL: "https://mulbitnaru930-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "mulbitnaru930",
+        storageBucket: "mulbitnaru930.firebasestorage.app",
+        messagingSenderId: "563863871857",
+        appId: "1:563863871857:web:61978cb0c534959e44d6d0",
+        measurementId: "G-1NDDNRLE7P"
+    };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 기본 선박 데이터 구조 (1: 남강 3호, 2: 남강 4호, 3: 남강 5호)
+    window.addEventListener('online', () => {
+        document.getElementById('offline-banner').classList.remove('active');
+    });
+    window.addEventListener('offline', () => {
+        document.getElementById('offline-banner').classList.add('active');
+    });
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+    }
+
     const defaultBoatData = {
-        1: { capacity: 16, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:15", "13:45", "14:15", "14:45", "15:15", "15:45", "16:15", "16:45", "17:15", "18:15", "18:45", "19:15", "19:45", "20:15", "20:45", "21:15", "21:45", "22:15"], seats: {}, customStatus: {} },
-        2: { capacity: 10, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:25", "13:55", "14:25", "14:55", "15:25", "15:55", "16:25", "16:55", "17:25", "18:25", "18:55", "19:25", "19:55", "20:25", "20:55", "21:25", "21:55", "22:25"], seats: {}, customStatus: {} },
-        3: { capacity: 10, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:35", "14:05", "14:35", "15:05", "15:35", "16:05", "16:35", "17:05", "17:35", "18:35", "19:05", "19:35", "20:05", "20:35", "21:05", "21:35", "22:05", "22:35"], seats: {}, customStatus: {} }
+        1: { capacity: 25, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:10", "13:50", "14:30", "15:10", "15:50", "16:30", "17:10", "18:10", "18:50", "19:30", "20:10", "20:50", "21:30", "22:10", "22:40"], seats: {}, customStatus: {} },
+        2: { capacity: 30, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:00", "13:40", "14:20", "15:00", "15:40", "16:20", "17:00", "18:00", "18:40", "19:20", "20:00", "20:40", "21:20", "22:00", "22:30"], seats: {}, customStatus: {} },
+        3: { capacity: 30, duration: 20, course: "망진나루 ↔ 진주성(촉석루)", notice: "현재 정상 운항 중입니다.", times: ["13:20", "14:00", "14:40", "15:20", "16:00", "16:40", "17:20", "18:20", "19:00", "19:40", "20:20", "21:00", "21:40", "22:20"], seats: {}, customStatus: {} }
     };
 
-    // 기본 설정 데이터 구조
     const defaultConfigData = {
         lastDate: "",
         alarmMinutes: 10,
@@ -840,7 +905,6 @@
     let boatData = JSON.parse(JSON.stringify(defaultBoatData));
     let configData = JSON.parse(JSON.stringify(defaultConfigData));
 
-    // 메모리 관리용 객체
     let playedAlarms = {};
     let playedBroadcasts = {};
     let playedEmergencyPopups = {};
@@ -859,6 +923,8 @@
     if (mode === 'guest_h') document.body.classList.add('is-guest', 'mode-h'); 
     if (mode === 'guest_v') document.body.classList.add('is-guest', 'mode-v'); 
     const isGuest = mode && mode.startsWith('guest');
+    const isCustomerGuest = (mode === 'guest_h'); 
+    const isWorker = (mode === 'guest_v'); 
 
     function buildPopupTimeSelectOptions() {
         const hourSelect = document.getElementById('popup-hour');
@@ -877,7 +943,6 @@
     }
     buildPopupTimeSelectOptions();
 
-    // Firebase 데이터 저장 함수들
     function saveBoatData() {
         set(ref(db, 'namgang/boatData'), boatData);
     }
@@ -887,7 +952,6 @@
         set(ref(db, 'namgang/configData'), configData);
     }
 
-    // Window 전역에 함수 등록
     window.handleManualPopupToggle = function(val) {
         if (isGuest) return;
         configData.popupManualSwitch = val;
@@ -980,15 +1044,15 @@
     window.applyNotice = function(id) {
         const text = document.getElementById(`notice-direct-${id}`).value;
         boatData[id].notice = text || "현재 정상 운항 중입니다.";
-        saveBoatData(); updateUI(); alert(`남강 ${id + 2}호의 실시간 공지사항이 반영되었습니다.`);
+        saveBoatData(); updateUI(); alert(`${id === 1 ? '3호' : id === 2 ? '4호' : '5호'}의 실시간 공지사항이 반영되었습니다.`);
     };
 
     window.deleteNotice = function(id) {
-        if(confirm(`남강 ${id + 2}호의 실시간 공지사항을 삭제하시겠습니까?`)) {
+        if(confirm(`${id === 1 ? '3호' : id === 2 ? '4호' : '5호'}의 실시간 공지사항을 삭제하시겠습니까?`)) {
             boatData[id].notice = "현재 정상 운항 중입니다.";
             const noticeIn = document.getElementById(`notice-direct-${id}`);
             if(noticeIn) noticeIn.value = ""; 
-            saveBoatData(); updateUI(); alert(`남강 ${id + 2}호의 공지사항이 삭제되었습니다.`);
+            saveBoatData(); updateUI(); alert(`${id === 1 ? '3호' : id === 2 ? '4호' : '5호'}의 공지사항이 삭제되었습니다.`);
         }
     };
 
@@ -1037,9 +1101,18 @@
 
     window.adjust = function(id, time, amt) {
         if (!boatData[id].seats) boatData[id].seats = {};
-        let cur = boatData[id].seats[time] || 0, next = cur + amt, cap = boatData[id].capacity;
-        if (amt === 1 && cur < cap) { boatData[id].seats[time] = next; saveBoatData(); updateUI(); }
-        else if (amt === -1 && cur > 0) { boatData[id].seats[time] = next; saveBoatData(); updateUI(); }
+        let cur = boatData[id].seats[time] || 0, next = cur + amt;
+        
+        if (amt === 1) { 
+            boatData[id].seats[time] = next; 
+            saveBoatData(); 
+            updateUI(); 
+        }
+        else if (amt === -1 && cur > 0) { 
+            boatData[id].seats[time] = next; 
+            saveBoatData(); 
+            updateUI(); 
+        }
     };
 
     window.resetBoat = function(id) {
@@ -1081,7 +1154,6 @@
         updateUI();
     };
 
-    // 알람 비프 사운드
     function playSingleBeepSignal(ctx, nowTime) {
         const osc1 = ctx.createOscillator(); const gain1 = ctx.createGain();
         osc1.type = 'sine'; osc1.frequency.setValueAtTime(587.33, nowTime);
@@ -1129,7 +1201,6 @@
         activeTtsBroadcasts = { 1: [], 2: [], 3: [] };
     }
 
-    // 백그라운드 체크 엔진
     function checkTenMinutesAlarm(id, times) {
         if (isGuest) return; 
         const option = document.querySelector('input[name="alarm_sound"]:checked');
@@ -1187,8 +1258,8 @@
                         if (!activeTtsBroadcasts[id].includes(t)) activeTtsBroadcasts[id].push(t);
                         updateUI();
 
-                        const boatName = `남강 ${id + 2}호`; 
-                        const speechText = `남강호 매표소에서 안내 드립니다. 잠시 후 ${tH}시 ${tM}분에 출발하는 ${boatName}에 탑승하시는 탑승객분들은, 탑승장소인 망진나루로 이동하여 주시기 바랍니다. ${boatName}는 망진나루를 출발하여 진주성 촉석루 앞까지, 약 20분 정도 소요되는 코스로 운항하고 있습니다. 감사합니다.`;
+                        const boatName = (id === 1) ? "남강 3호" : id === 2 ? "남강 4호" : "남강 5호"; 
+                        const speechText = `남강 유람선 매표소에서 안내 드립니다. 잠시 후 ${tH}시 ${tM}분에 출발하는 ${boatName}에 탑승하시는 탑승객분들은, 탑승장소인 망진나루로 이동하여 주시기 바랍니다. ${boatName}는 망진나루를 출발하여 진주성 촉석루 앞까지, 약 20분 정도 소요되는 코스로 운항하고 있습니다. 감사합니다.`;
 
                         executeNativeTTS(speechText, maxLoops, id, t);
                     }
@@ -1249,7 +1320,7 @@
             mainTitle.innerText = "🚨 긴급 공지사항";
             timeDisplay.innerText = `${year}년 ${month}월 ${date}일 ${hours}시 ${minutes}분`;
             timeDisplay.style.display = "inline-block";
-            if (footerBox) footerBox.innerText = "📢 물빛나루쉼터 남강호 매표소";
+            if (footerBox) footerBox.innerText = "📢 물빛나루쉼터 남강 유람선 매표소";
         } else if (mode === 'guest_v') {
             innerBox.className = "emergency-popup-box popup-staff-theme";
             mainTitle.innerText = "📢 [근무자 전파] 긴급 지시사항";
@@ -1314,7 +1385,6 @@
         }
     }
 
-    // UI 동기화 렌더러
     function updateUI() {
         const now = new Date();
         const year = now.getFullYear();
@@ -1394,17 +1464,13 @@
             const totalCount = times.length;
             const pageIndicator = document.getElementById(`page-indicator-${id}`);
 
-            if (isGuest && totalCount > 10) {
+            if (isGuest && totalCount > 10 && isRotationActiveForThisMode) {
                 const totalPages = Math.ceil(totalCount / 10);
                 let pStat = guestPageStatus[id];
 
-                if (isRotationActiveForThisMode) {
-                    if (now.getTime() - pStat.lastRotationTime >= pageInterval) {
-                        pStat.currentPage = (pStat.currentPage % totalPages) + 1;
-                        pStat.lastRotationTime = now.getTime();
-                    }
-                } else {
-                    pStat.currentPage = 1;
+                if (now.getTime() - pStat.lastRotationTime >= pageInterval) {
+                    pStat.currentPage = (pStat.currentPage % totalPages) + 1;
+                    pStat.lastRotationTime = now.getTime();
                 }
 
                 const startIdx = (pStat.currentPage - 1) * 10;
@@ -1421,7 +1487,12 @@
             let tbodyHtml = "";
             pageTimes.forEach(t => {
                 const capacity = boatData[id].capacity || 0;
-                const booked = (boatData[id].seats && boatData[id].seats[t]) || 0;
+                let booked = (boatData[id].seats && boatData[id].seats[t]) || 0;
+                
+                if (isCustomerGuest && booked > capacity) {
+                    booked = capacity;
+                }
+
                 const remain = capacity - booked;
                 const customStat = (boatData[id].customStatus && boatData[id].customStatus[t]) || "auto";
 
@@ -1479,7 +1550,7 @@
                         statusClass = "bg-dark-green-yellow";
                     } else {
                         if (remain <= 0) {
-                            statusText = "매 진";
+                            statusText = "매 진(Sold out)";
                             rowClass = "row-soldout-blink";
                             statusClass = "text-soldout";
                             remainClass += " text-soldout-zero";
@@ -1494,6 +1565,13 @@
                 if (remain <= 0 && customStat === "auto" && !statusText.includes("종료") && statusText !== "운 항 중") {
                     rowClass = "row-soldout-blink";
                     remainClass += " text-soldout-zero";
+                }
+
+                if (remain < 0) {
+                    if (!isGuest || isWorker) {
+                        const excessCount = Math.abs(remain);
+                        remainText = `<span class="over-capacity-text">⚠️ 초과 +${excessCount}명</span>`;
+                    }
                 }
 
                 const isAlarmActive = activeVisualAlarms[id].includes(t);
@@ -1536,7 +1614,7 @@
                             </div>
                         </td>
                         <td class="${lineThroughClass}">
-                            <span class="${remainClass}">${remainText}</span>명
+                            <span class="${remainClass}">${remainText}</span>${remain < 0 && (!isGuest || isWorker) ? '' : '명'}
                         </td>
                         <td>
                             <div class="status-cell-flex">
@@ -1553,17 +1631,17 @@
         checkEmergencyPopupSchedule();
     }
 
-    // Firebase 리스너 수신부
     const boatDataRef = ref(db, 'namgang/boatData');
     onValue(boatDataRef, (snapshot) => {
         const val = snapshot.val();
         if (val) {
             boatData = val;
-            [1, 2, 3].forEach(id => {
-                if (!boatData[id]) boatData[id] = JSON.parse(JSON.stringify(defaultBoatData[id]));
-                if (!boatData[id].seats) boatData[id].seats = {};
-                if (!boatData[id].customStatus) boatData[id].customStatus = {};
-            });
+            if (!boatData[1].seats) boatData[1].seats = {};
+            if (!boatData[1].customStatus) boatData[1].customStatus = {};
+            if (!boatData[2].seats) boatData[2].seats = {};
+            if (!boatData[2].customStatus) boatData[2].customStatus = {};
+            if (!boatData[3].seats) boatData[3].seats = {};
+            if (!boatData[3].customStatus) boatData[3].customStatus = {};
             updateUI();
         } else {
             saveBoatData();
@@ -1612,14 +1690,12 @@
         }
     });
 
-    // 드롭다운 외곽 클릭 닫기
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.custom-multiselect')) {
             document.querySelectorAll('.checkbox-list').forEach(el => el.classList.remove('show'));
         }
     });
 
-    // 1초 주기의 UI/시계 갱신 루프
     setInterval(() => {
         updateUI();
     }, 1000);
