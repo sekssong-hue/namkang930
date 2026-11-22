@@ -34,6 +34,7 @@
       --text-main: #ffffff;
       --text-sub: #d0d7de;
       --border-color: #30363d;
+      --left-panel-width: 44%;
     }
 
     * {
@@ -201,6 +202,9 @@
     }
 
     .ship-name-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: clamp(0.85rem, 1vw, 0.98rem);
       font-weight: 700;
       padding: 4px 9px;
@@ -211,20 +215,28 @@
       white-space: nowrap;
     }
 
+    .ship-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px currentColor;
+    }
+
     .ship-name-chip.sailing {
-      background: rgba(74, 222, 128, 0.22);
+      background: rgba(74, 222, 128, 0.18);
       border-color: var(--accent-green-bright);
       color: #86efac;
     }
 
     .ship-name-chip.waiting {
-      background: rgba(56, 189, 248, 0.22);
+      background: rgba(56, 189, 248, 0.18);
       border-color: var(--accent-blue-bright);
       color: #7dd3fc;
     }
 
     .ship-name-chip.released {
-      background: rgba(255, 107, 107, 0.22);
+      background: rgba(255, 107, 107, 0.18);
       border-color: var(--accent-red-bright);
       color: #fca5a5;
     }
@@ -251,12 +263,54 @@
       transform: translateY(-1px);
     }
 
+    /* 좌우 조절 가능 레이아웃 */
     .admin-grid {
-      display: grid;
-      grid-template-columns: minmax(360px, 1.05fr) minmax(400px, 1.35fr);
-      gap: 16px;
+      display: flex;
+      align-items: stretch;
+      gap: 0;
       flex: 1;
       min-height: 0;
+      width: 100%;
+    }
+
+    .left-panel {
+      flex: 0 0 var(--left-panel-width);
+      min-width: 280px;
+      max-width: calc(100% - 300px);
+    }
+
+    .right-panel {
+      flex: 1 1 auto;
+      min-width: 280px;
+    }
+
+    .panel-resizer {
+      width: 14px;
+      cursor: col-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      user-select: none;
+      touch-action: none;
+      position: relative;
+      transition: background-color 0.15s ease;
+    }
+
+    .panel-resizer::before {
+      content: "";
+      width: 4px;
+      height: 64px;
+      border-radius: 4px;
+      background: var(--border-color);
+      transition: all 0.15s ease;
+    }
+
+    .panel-resizer:hover::before,
+    .panel-resizer.dragging::before {
+      background: var(--accent-color);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
+      height: 90px;
     }
 
     .panel-box {
@@ -269,6 +323,7 @@
       gap: 14px;
       overflow: hidden;
       box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      height: 100%;
     }
 
     .panel-header {
@@ -293,6 +348,7 @@
     .panel-controls {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .btn-toggle-all {
@@ -312,6 +368,12 @@
       border-color: var(--accent-color);
     }
 
+    .btn-toggle-all.active-trail {
+      background: rgba(0, 242, 254, 0.2);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
     .vessel-list-container {
       flex: 1;
       overflow-y: auto;
@@ -325,29 +387,25 @@
     .vessel-card {
       background: rgba(255, 255, 255, 0.04);
       border: 2px solid var(--border-color);
+      border-left-width: 6px;
       border-radius: 12px;
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       transition: all 0.2s ease;
     }
 
     .vessel-card.sailing {
-      border-color: var(--accent-green-bright);
-      background: rgba(74, 222, 128, 0.1);
-      box-shadow: 0 0 12px rgba(74, 222, 128, 0.16);
+      background: rgba(74, 222, 128, 0.08);
     }
 
     .vessel-card.waiting {
-      border-color: var(--accent-blue-bright);
-      background: rgba(56, 189, 248, 0.1);
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.12);
+      background: rgba(56, 189, 248, 0.08);
     }
 
     .vessel-card.released {
-      border-color: var(--accent-red-bright);
-      background: rgba(255, 107, 107, 0.09);
+      background: rgba(255, 107, 107, 0.08);
     }
 
     .vessel-card-top {
@@ -372,6 +430,25 @@
       margin-left: auto;
     }
 
+    .vessel-route-summary {
+      font-size: clamp(0.95rem, 1.12vw, 1.06rem);
+      font-weight: 700;
+      color: var(--text-main);
+      background: rgba(0, 0, 0, 0.24);
+      padding: 6px 10px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .route-arrow {
+      color: var(--accent-color);
+      font-weight: 900;
+    }
+
     .vessel-mini-meta {
       font-size: clamp(0.9rem, 1.05vw, 1rem);
       font-weight: 700;
@@ -383,6 +460,9 @@
     }
 
     .vessel-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
       font-size: clamp(1.15rem, 1.4vw, 1.3rem);
       font-weight: 800;
       color: #ffffff;
@@ -521,24 +601,15 @@
       z-index: 1000;
     }
 
-    .admin-ship-badge.sailing {
-      color: #86efac;
-      border: 2.5px solid var(--accent-green-bright);
-    }
-
-    .admin-ship-badge.waiting {
-      color: #7dd3fc;
-      border: 2.5px solid var(--accent-blue-bright);
-    }
-
-    .admin-ship-badge.released {
-      color: #fca5a5;
-      border: 2.5px solid var(--accent-red-bright);
-    }
-
     @media (max-width: 900px) {
       body { height: auto; }
-      .admin-grid { grid-template-columns: 1fr; }
+      .admin-grid { flex-direction: column; gap: 14px; }
+      .left-panel, .right-panel {
+        flex: 1 1 auto;
+        min-width: 100%;
+        max-width: 100%;
+      }
+      .panel-resizer { display: none; }
       #map { min-height: 400px; }
       .vessel-list-container { max-height: 420px; }
       .metric-ship-list { max-width: 100%; }
@@ -551,7 +622,7 @@
   <header>
     <div class="title-group">
       <h1>🛡️ GPS 선박 관제 센터</h1>
-      <div class="sub-title">실시간 선박 위치 추적 및 원격 통합 관리 모니터링</div>
+      <div class="sub-title">실시간 선박 위치·항적·출발/도착지 추적 및 원격 통합 관리 모니터링</div>
     </div>
     <div id="server-badge" class="server-status-badge">
       <div class="status-dot"></div>
@@ -600,8 +671,8 @@
   </div>
 
   <!-- 메인 대시보드 -->
-  <div class="admin-grid">
-    <div class="panel-box">
+  <div class="admin-grid" id="admin-grid">
+    <div class="panel-box left-panel" id="left-panel">
       <div class="panel-header">
         <div class="panel-title">🚢 실시간 선박 현황 목록</div>
         <div class="panel-controls">
@@ -612,9 +683,18 @@
       <div class="vessel-list-container" id="vessel-list"></div>
     </div>
 
-    <div class="panel-box">
+    <div class="panel-resizer" id="panel-resizer" title="좌우로 끌어 너비 조절 (더블클릭: 기본 비율)"></div>
+
+    <div class="panel-box right-panel" id="right-panel">
       <div class="panel-header">
-        <div class="panel-title">🗺️ 남강 GIS 위치 지도</div>
+        <div class="panel-title">🗺️ 남강 GIS 위치 및 항적 지도</div>
+        <div class="panel-controls">
+          <button type="button" class="btn-toggle-all" id="btn-ratio-list">목록 넓게</button>
+          <button type="button" class="btn-toggle-all" id="btn-ratio-even">50:50</button>
+          <button type="button" class="btn-toggle-all" id="btn-ratio-map">지도 넓게</button>
+          <button type="button" class="btn-toggle-all active-trail" id="btn-toggle-trails">〰️ 궤적 표시 중</button>
+          <button type="button" class="btn-toggle-all" id="btn-clear-trails">🧹 궤적 초기화</button>
+        </div>
       </div>
       <div id="map"></div>
     </div>
@@ -635,6 +715,167 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // GIS 지도 초기화 (진주 남강 중심 좌표)
+    const map = L.map('map').setView([35.1880, 128.0838], 15);
+    L.tileLayer('https://xdworld.vworld.kr/2d/Base/service/{z}/{x}/{y}.png', { 
+      maxZoom: 19,
+      attribution: '&copy; VWORLD'
+    }).addTo(map);
+
+    // ↔️ 좌우 패널 너비 조절 로직
+    (function initPanelResizer() {
+      const grid = document.getElementById('admin-grid');
+      const resizer = document.getElementById('panel-resizer');
+      const root = document.documentElement;
+      const DEFAULT_WIDTH = '44%';
+
+      function setLeftWidth(percentOrPx) {
+        if (typeof percentOrPx === 'number') {
+          const gridRect = grid.getBoundingClientRect();
+          const minPx = 280;
+          const maxPx = Math.max(minPx, gridRect.width - 314);
+          const clamped = Math.min(Math.max(percentOrPx, minPx), maxPx);
+          root.style.setProperty('--left-panel-width', `${clamped}px`);
+        } else {
+          root.style.setProperty('--left-panel-width', percentOrPx);
+        }
+        requestAnimationFrame(() => map.invalidateSize());
+      }
+
+      let isDragging = false;
+
+      resizer.addEventListener('pointerdown', (e) => {
+        if (window.innerWidth <= 900) return;
+        isDragging = true;
+        resizer.classList.add('dragging');
+        resizer.setPointerCapture(e.pointerId);
+        document.body.style.cursor = 'col-resize';
+      });
+
+      resizer.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const gridRect = grid.getBoundingClientRect();
+        setLeftWidth(e.clientX - gridRect.left);
+      });
+
+      function stopDragging(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        resizer.classList.remove('dragging');
+        document.body.style.cursor = '';
+        if (e && resizer.hasPointerCapture(e.pointerId)) {
+          resizer.releasePointerCapture(e.pointerId);
+        }
+        map.invalidateSize();
+      }
+
+      resizer.addEventListener('pointerup', stopDragging);
+      resizer.addEventListener('pointercancel', stopDragging);
+      resizer.addEventListener('dblclick', () => setLeftWidth(DEFAULT_WIDTH));
+
+      document.getElementById('btn-ratio-list').addEventListener('click', () => setLeftWidth('56%'));
+      document.getElementById('btn-ratio-even').addEventListener('click', () => setLeftWidth('50%'));
+      document.getElementById('btn-ratio-map').addEventListener('click', () => setLeftWidth('34%'));
+    })();
+
+    // 선박별 고유 색상 팔레트
+    const SHIP_COLOR_PALETTE = [
+      "#00f2fe", // 시안
+      "#4ade80", // 라임 그린
+      "#fbbf24", // 앰버 옐로우
+      "#f472b6", // 핑크
+      "#a78bfa", // 바이올렛
+      "#fb923c", // 오렌지
+      "#38bdf8", // 스카이 블루
+      "#2dd4bf", // 틸
+      "#f87171", // 코랄 레드
+      "#a3e635"  // 옐로우 그린
+    ];
+    const assignedShipColors = {};
+    let colorCursor = 0;
+
+    function getShipColor(key, shipName) {
+      const seed = String(shipName || key || '');
+      if (!assignedShipColors[key]) {
+        let hash = 0;
+        for (let i = 0; i < seed.length; i++) {
+          hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+        }
+        const idx = (hash + colorCursor++) % SHIP_COLOR_PALETTE.length;
+        assignedShipColors[key] = SHIP_COLOR_PALETTE[idx];
+      }
+      return assignedShipColors[key];
+    }
+
+    // 진주 남강 주요 지점 좌표 (출발지/도착지 자동 추정용)
+    const NAMGANG_LANDMARKS = [
+      { name: "물빛나루쉼터", lat: 35.1883, lng: 128.0846 },
+      { name: "촉석루·진주성", lat: 35.1904, lng: 128.0785 },
+      { name: "진주교", lat: 35.1897, lng: 128.0812 },
+      { name: "천수교", lat: 35.1872, lng: 128.0895 },
+      { name: "경남문화예술회관", lat: 35.1862, lng: 128.0958 },
+      { name: "망진나루", lat: 35.1785, lng: 128.1180 }
+    ];
+
+    const recordedDepartures = {};
+
+    function findNearestLandmark(lat, lng) {
+      const nLat = Number(lat);
+      const nLng = Number(lng);
+      if (!nLat || !nLng || isNaN(nLat) || isNaN(nLng) || nLat <= 0 || nLng <= 0) {
+        return null;
+      }
+      let best = null;
+      let minDist = Infinity;
+      for (const spot of NAMGANG_LANDMARKS) {
+        const d = Math.hypot(nLat - spot.lat, nLng - spot.lng);
+        if (d < minDist) {
+          minDist = d;
+          best = spot.name;
+        }
+      }
+      if (best && minDist < 0.008) return best;
+      return `남강 (${nLat.toFixed(4)}, ${nLng.toFixed(4)})`;
+    }
+
+    function resolveDepartureAndArrival(key, ship, hasValidGps, isSailing, hasEndTime) {
+      const explicitDep =
+        ship.departure || ship.origin || ship.startLocation || ship.startPlace || ship.from || '';
+      const explicitArr =
+        ship.arrival || ship.destination || ship.endLocation || ship.endPlace || ship.to || '';
+
+      const currentSpot = hasValidGps ? findNearestLandmark(ship.lat, ship.lng) : null;
+
+      let departure = String(explicitDep || '').trim();
+      if (!departure) {
+        if (hasValidGps && (isSailing || hasEndTime)) {
+          if (!recordedDepartures[key] && currentSpot) {
+            recordedDepartures[key] = currentSpot;
+          }
+          departure = recordedDepartures[key] || currentSpot || '-';
+        } else if (hasValidGps && currentSpot) {
+          departure = currentSpot;
+        } else {
+          departure = recordedDepartures[key] || '-';
+        }
+      } else if (currentSpot) {
+        recordedDepartures[key] = departure;
+      }
+
+      let arrival = String(explicitArr || '').trim();
+      let arrivalNote = '';
+      if (!arrival) {
+        if (hasValidGps && currentSpot) {
+          arrival = currentSpot;
+          if (isSailing) arrivalNote = ' (현위치 추정)';
+        } else {
+          arrival = '-';
+        }
+      }
+
+      return { departure, arrival, arrivalNote };
+    }
 
     // 🔒 [보안 강화] XSS 예방 문자열 필터링 함수
     function escapeHtml(str) {
@@ -661,16 +902,99 @@
       }
     });
 
-    // GIS 지도 초기화 (진주 남강 중심 좌표)
-    const map = L.map('map').setView([35.1880, 128.0838], 15);
-    L.tileLayer('https://xdworld.vworld.kr/2d/Base/service/{z}/{x}/{y}.png', { 
-      maxZoom: 19,
-      attribution: '&copy; VWORLD'
-    }).addTo(map);
-
     const shipMarkers = {};
+    const shipTrails = {};
+    const shipPolylines = {};
+    let showTrails = true;
     let latestShipsData = {};
     const expandedShipKeys = new Set();
+
+    function extractExternalPoints(ship) {
+      const raw = ship.track || ship.route || ship.path || ship.history || ship.trail;
+      if (!raw) return [];
+      const list = Array.isArray(raw) ? raw : Object.values(raw);
+      const pts = [];
+      for (const item of list) {
+        if (!item) continue;
+        const lat = Number(item.lat ?? item.latitude ?? (Array.isArray(item) ? item[0] : NaN));
+        const lng = Number(item.lng ?? item.lon ?? item.longitude ?? (Array.isArray(item) ? item[1] : NaN));
+        if (lat > 0 && lng > 0 && !isNaN(lat) && !isNaN(lng)) {
+          pts.push([lat, lng]);
+        }
+      }
+      return pts;
+    }
+
+    function updateShipTrail(key, ship, color) {
+      const hasValidGps = Boolean(ship.lat && ship.lng && Number(ship.lat) > 0 && Number(ship.lng) > 0);
+      const extPts = extractExternalPoints(ship);
+
+      if (extPts.length > 0) {
+        shipTrails[key] = extPts;
+      } else if (hasValidGps) {
+        const lat = Number(ship.lat);
+        const lng = Number(ship.lng);
+        if (!shipTrails[key]) shipTrails[key] = [];
+        const arr = shipTrails[key];
+        const last = arr[arr.length - 1];
+        if (!last || Math.hypot(last[0] - lat, last[1] - lng) > 0.00001) {
+          arr.push([lat, lng]);
+          if (arr.length > 1000) arr.shift();
+        }
+      }
+
+      const coords = shipTrails[key] || [];
+      if (coords.length >= 2 && showTrails) {
+        if (shipPolylines[key]) {
+          shipPolylines[key]
+            .setLatLngs(coords)
+            .setStyle({ color: color, weight: 4.5, opacity: 0.9 });
+          if (!map.hasLayer(shipPolylines[key])) {
+            shipPolylines[key].addTo(map);
+          }
+        } else {
+          shipPolylines[key] = L.polyline(coords, {
+            color: color,
+            weight: 4.5,
+            opacity: 0.9,
+            lineJoin: 'round'
+          }).addTo(map);
+        }
+      } else if (shipPolylines[key]) {
+        map.removeLayer(shipPolylines[key]);
+      }
+    }
+
+    // 궤적 표시/숨김 및 초기화 버튼
+    const btnToggleTrails = document.getElementById('btn-toggle-trails');
+    btnToggleTrails.addEventListener('click', () => {
+      showTrails = !showTrails;
+      btnToggleTrails.classList.toggle('active-trail', showTrails);
+      btnToggleTrails.innerText = showTrails ? '〰️ 궤적 표시 중' : '〰️ 궤적 숨김';
+
+      Object.keys(shipPolylines).forEach(k => {
+        if (showTrails && (shipTrails[k] || []).length >= 2) {
+          shipPolylines[k].addTo(map);
+        } else {
+          map.removeLayer(shipPolylines[k]);
+        }
+      });
+    });
+
+    document.getElementById('btn-clear-trails').addEventListener('click', () => {
+      Object.keys(shipTrails).forEach(k => {
+        const ship = latestShipsData[k];
+        if (ship && ship.lat && ship.lng && Number(ship.lat) > 0 && Number(ship.lng) > 0) {
+          shipTrails[k] = [[Number(ship.lat), Number(ship.lng)]];
+        } else {
+          shipTrails[k] = [];
+        }
+      });
+      Object.keys(shipPolylines).forEach(k => {
+        map.removeLayer(shipPolylines[k]);
+        delete shipPolylines[k];
+      });
+    });
 
     // 전체 펼치기 / 접기 버튼
     document.getElementById('btn-expand-all').addEventListener('click', () => {
@@ -763,10 +1087,10 @@
       const keys = Object.keys(data);
       document.getElementById('total-ships-count').innerText = keys.length;
       
-      const totalNames = [];
-      const sailingNames = [];
-      const waitingNames = [];
-      const releasedNames = [];
+      const totalChips = [];
+      const sailingChips = [];
+      const waitingChips = [];
+      const releasedChips = [];
 
       if (keys.length === 0) {
         vesselList.innerHTML = `<div style="text-align:center; color:var(--text-sub); padding:32px 12px; font-size:1.05rem;">현재 등록되거나 접속 중인 선박이 없습니다.</div>`;
@@ -820,8 +1144,10 @@
 
       keys.forEach(key => {
         const ship = data[key];
+        const shipColor = getShipColor(key, ship.shipName);
         const shipDisplayName = escapeHtml(ship.shipName || key);
-        totalNames.push(shipDisplayName);
+        const chipItem = { name: shipDisplayName, color: shipColor };
+        totalChips.push(chipItem);
         
         let tripStatusText = '';
         let statusClass = '';
@@ -833,24 +1159,31 @@
         if (!hasValidGps || ship.isOperating === false) {
           tripStatusText = '운항해제';
           statusClass = 'released';
-          releasedNames.push(shipDisplayName);
+          releasedChips.push(chipItem);
         } else if (hasStartTime && hasEndTime) {
           tripStatusText = '대기중';
           statusClass = 'waiting';
-          waitingNames.push(shipDisplayName);
+          waitingChips.push(chipItem);
         } else if (hasStartTime && !hasEndTime) {
           tripStatusText = '운항중';
           statusClass = 'sailing';
-          sailingNames.push(shipDisplayName);
+          sailingChips.push(chipItem);
         } else {
           tripStatusText = '대기중';
           statusClass = 'waiting';
-          waitingNames.push(shipDisplayName);
+          waitingChips.push(chipItem);
         }
+
+        const isSailing = (statusClass === 'sailing');
+        const { departure, arrival, arrivalNote } = resolveDepartureAndArrival(
+          key, ship, hasValidGps, isSailing, hasEndTime
+        );
+        const depSafe = escapeHtml(departure);
+        const arrSafe = escapeHtml(arrival);
+        const arrNoteSafe = escapeHtml(arrivalNote);
 
         const startTimeText = escapeHtml(ship.startTime) || '-';
         const endTimeText = escapeHtml(ship.endTime) || '-';
-        const isSailing = (statusClass === 'sailing');
         const durationText = calculateDuration(ship.startTime, ship.endTime, isSailing);
         const speedFormatted = `${(Number(ship.speedKts) || 0).toFixed(1)} Kts`;
 
@@ -860,32 +1193,43 @@
         const isExpanded = expandedShipKeys.has(key);
         const card = document.createElement('div');
         card.className = `vessel-card ${statusClass}${isExpanded ? ' expanded' : ''}`;
+        card.style.borderLeftColor = shipColor;
         
         const encKey = encodeURIComponent(key);
 
         card.innerHTML = `
           <div class="vessel-card-top">
             <div class="vessel-header-left">
-              <span class="vessel-name">🚢 ${shipDisplayName}</span>
+              <span class="vessel-name">
+                <span class="ship-color-dot" style="background:${shipColor}; color:${shipColor};"></span>
+                🚢 ${shipDisplayName}
+              </span>
               <span class="vessel-status-tag ${statusClass}">${escapeHtml(tripStatusText)}</span>
             </div>
             <div class="vessel-header-right">
               <div class="vessel-mini-meta">
-                <span style="color:var(--accent-color)">${speedFormatted}</span>
+                <span style="color:${shipColor}">${speedFormatted}</span>
                 <span>·</span>
                 <span id="mini-duration-${encKey}" style="color:var(--accent-yellow)">${durationText}</span>
               </div>
               <button type="button" class="btn-expand">${isExpanded ? '▲ 접기' : '▼ 펼치기'}</button>
             </div>
           </div>
+          <div class="vessel-route-summary">
+            <span>출발: <strong style="color:${shipColor}">${depSafe}</strong></span>
+            <span class="route-arrow">→</span>
+            <span>도착: <strong style="color:#ffffff">${arrSafe}</strong><span style="font-size:0.85rem; color:var(--text-sub);">${arrNoteSafe}</span></span>
+          </div>
           <div class="vessel-detail-section">
             <div class="vessel-info-grid">
-              <div>속도: <strong style="color:var(--accent-color)">${speedFormatted}</strong></div>
-              <div>위도: ${latText}</div>
-              <div>출항시각: <strong style="color:#7dd3fc">${startTimeText}</strong></div>
-              <div>경도: ${lngText}</div>
-              <div>도착시각: <strong style="color:#fca5a5">${endTimeText}</strong></div>
+              <div>출발지: <strong style="color:${shipColor}">${depSafe}</strong></div>
+              <div>도착지: <strong style="color:#ffffff">${arrSafe}${arrNoteSafe}</strong></div>
+              <div>속도: <strong style="color:${shipColor}">${speedFormatted}</strong></div>
               <div>운항시간: <strong id="duration-${encKey}" style="color:var(--accent-yellow)">${durationText}</strong></div>
+              <div>출항시각: <strong style="color:#7dd3fc">${startTimeText}</strong></div>
+              <div>도착시각: <strong style="color:#fca5a5">${endTimeText}</strong></div>
+              <div>위도: ${latText}</div>
+              <div>경도: ${lngText}</div>
             </div>
             <div class="vessel-action-group">
               <button type="button" class="btn-action btn-locate">📍 위치 보기</button>
@@ -914,13 +1258,16 @@
 
         vesselList.appendChild(card);
 
+        // 〰️ 선박 궤적 업데이트
+        updateShipTrail(key, ship, shipColor);
+
         // 🗺️ 지도 마커 업데이트
         if (hasValidGps && renderCoords[key]) {
           const rCoord = renderCoords[key];
           
           const icon = L.divIcon({
             className: '',
-            html: `<div class="admin-ship-badge ${statusClass}">🚢 ${shipDisplayName}<br><span style="font-size:13px; color:#ffffff;">[${escapeHtml(tripStatusText)}] ${speedFormatted}</span></div>`,
+            html: `<div class="admin-ship-badge" style="color:${shipColor}; border:2.5px solid ${shipColor};">🚢 ${shipDisplayName}<br><span style="font-size:13px; color:#ffffff;">[${escapeHtml(tripStatusText)}] ${speedFormatted}</span></div>`,
             iconSize: [150, 54],
             iconAnchor: [75, 27]
           });
@@ -929,6 +1276,7 @@
             <div style="color:#000; text-align:center; padding:6px; font-size:14px;">
               <strong style="font-size:15px;">🚢 ${shipDisplayName}</strong><br>
               <span>상태: <strong>${escapeHtml(tripStatusText)}</strong></span><br>
+              <span>출발: <strong>${depSafe}</strong> → 도착: <strong>${arrSafe}</strong></span><br>
               <span>속도: ${speedFormatted}</span>
             </div>
           `;
@@ -948,19 +1296,19 @@
         }
       });
 
-      // 사라진 선박 키 정리
+      // 사라진 선박 정리
       expandedShipKeys.forEach(k => {
         if (!data[k]) expandedShipKeys.delete(k);
       });
 
-      document.getElementById('sailing-ships-count').innerText = sailingNames.length;
-      document.getElementById('waiting-ships-count').innerText = waitingNames.length;
-      document.getElementById('released-ships-count').innerText = releasedNames.length;
+      document.getElementById('sailing-ships-count').innerText = sailingChips.length;
+      document.getElementById('waiting-ships-count').innerText = waitingChips.length;
+      document.getElementById('released-ships-count').innerText = releasedChips.length;
 
-      renderShipNameChips('total-ships-names', totalNames, '');
-      renderShipNameChips('sailing-ships-names', sailingNames, 'sailing');
-      renderShipNameChips('waiting-ships-names', waitingNames, 'waiting');
-      renderShipNameChips('released-ships-names', releasedNames, 'released');
+      renderShipNameChips('total-ships-names', totalChips, '');
+      renderShipNameChips('sailing-ships-names', sailingChips, 'sailing');
+      renderShipNameChips('waiting-ships-names', waitingChips, 'waiting');
+      renderShipNameChips('released-ships-names', releasedChips, 'released');
 
       Object.keys(shipMarkers).forEach(k => {
         if (!data[k]) {
@@ -968,16 +1316,24 @@
           delete shipMarkers[k];
         }
       });
+
+      Object.keys(shipPolylines).forEach(k => {
+        if (!data[k]) {
+          map.removeLayer(shipPolylines[k]);
+          delete shipPolylines[k];
+          delete shipTrails[k];
+        }
+      });
     });
 
-    function renderShipNameChips(elementId, namesArray, statusClass) {
+    function renderShipNameChips(elementId, chipsArray, statusClass) {
       const container = document.getElementById(elementId);
       if (!container) return;
-      if (namesArray.length === 0) {
+      if (chipsArray.length === 0) {
         container.innerHTML = `<span style="font-size:0.9rem; color:var(--text-sub);">-</span>`;
       } else {
-        container.innerHTML = namesArray.map(name => 
-          `<span class="ship-name-chip ${statusClass}">${name}</span>`
+        container.innerHTML = chipsArray.map(item => 
+          `<span class="ship-name-chip ${statusClass}"><span class="ship-color-dot" style="background:${item.color}; color:${item.color};"></span>${item.name}</span>`
         ).join('');
       }
     }
@@ -1008,11 +1364,19 @@
     function forceStopShip(shipKey, shipName) {
       if (confirm(`[${shipName}] 선박의 운항을 강제로 해제하시겠습니까?`)) {
         const nowTime = new Date().toLocaleTimeString('ko-KR', { hour12: false });
-        db.ref('ships/' + shipKey).update({
+        const ship = latestShipsData[shipKey] || {};
+        const currentSpot = (ship.lat && ship.lng && Number(ship.lat) > 0 && Number(ship.lng) > 0)
+          ? findNearestLandmark(ship.lat, ship.lng)
+          : '';
+        const updatePayload = {
           isOperating: false,
           endTime: nowTime,
           speedKts: 0
-        })
+        };
+        if (currentSpot && !ship.arrival && !ship.destination) {
+          updatePayload.arrival = currentSpot;
+        }
+        db.ref('ships/' + shipKey).update(updatePayload)
         .then(() => {
           console.log(`[Success] 선박 강제 해제 완료: ${shipKey}`);
           alert(`[${shipName}] 선박이 강제 운항 해제되었습니다.`);
@@ -1039,9 +1403,16 @@
 
           const updates = {};
           Object.keys(data).forEach(key => {
+            const ship = data[key] || {};
+            const currentSpot = (ship.lat && ship.lng && Number(ship.lat) > 0 && Number(ship.lng) > 0)
+              ? findNearestLandmark(ship.lat, ship.lng)
+              : '';
             updates[`ships/${key}/isOperating`] = false;
             updates[`ships/${key}/endTime`] = nowTime;
             updates[`ships/${key}/speedKts`] = 0;
+            if (currentSpot && !ship.arrival && !ship.destination) {
+              updates[`ships/${key}/arrival`] = currentSpot;
+            }
           });
 
           db.ref().update(updates)
